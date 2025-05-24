@@ -1,0 +1,33 @@
+{
+  "name": "rent-posts-scraper",
+  "version": "0.0.1",
+  "description": "a facbook group scraper for rent listing posts",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node --env-file config/config.env dist/src/index.js",
+    "postinstall": "npx puppeteer install",
+    "db:generate": "drizzle-kit generate"
+  },
+  "author": "Tuvia Rumpler",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.21",
+    "@types/node-fetch": "^2.6.12",
+    "drizzle-kit": "^0.31.1",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.1",
+    "@techery/zod-to-vertex-schema": "^0.1.4",
+    "better-sqlite3": "^11.10.0",
+    "drizzle-orm": "^0.43.1",
+    "grammy": "^1.36.1",
+    "node-fetch": "^2.7.0",
+    "puppeteer": "^24.9.0",
+    "rebrowser-puppeteer": "^24.8.1",
+    "zod": "^3.25.27"
+  }
+}
