@@ -1,216 +1,296 @@
-import { bot } from './bot';
-import { CombinedPost } from '../db/schemas/posts';
-import path from 'path';
-import fs from 'fs';
-import os from 'os';
-import fetch from 'node-fetch';
-import { InputFile } from 'grammy';
-import type { InputMediaPhoto } from '@grammyjs/types';
+import { bot } from "./bot";
+import { CombinedPostFromDb } from "../db/schemas/posts";
+import fs from "fs";
+import { InputFile } from "grammy";
+import type { InputMediaPhoto, InputMediaVideo } from "@grammyjs/types";
+
+function getPostText(post: CombinedPostFromDb): string {
+	const text = [
+		post.text,
+		post.childPosts?.map((child) => child.text).join("\n"),
+	]
+		.filter(Boolean)
+		.join("\n");
+	return text.length > 0 ? `${text}\n\n\n` : "";
+}
+
+function getPostDateInfo(post: CombinedPostFromDb): string {
+	const childPostDate = post.childPosts?.[0]?.creationTime;
+	const creationTime = post.creationTime || childPostDate;
+	const hasTwoDates =
+		post.creationTime &&
+		childPostDate &&
+		post.creationTime !== childPostDate;
+	const hasDate = Boolean(creationTime || childPostDate);
+	if (!hasDate) return "";
+	const dateText = hasTwoDates
+		? `📆 *Posted on:* ${new Date(
+				post.creationTime!
+		  ).toLocaleDateString()} (original) / ${new Date(
+				childPostDate
+		  ).toLocaleDateString()} (child)\n`
+		: `📆 *Posted on:* ${new Date(creationTime!).toLocaleDateString()}\n`;
+	return creationTime ? dateText : "";
+}
+
+function getLocationInfo(post: CombinedPostFromDb): string {
+	const childPostLocation = post.childPosts?.[0]?.location;
+	const location = post.location || childPostLocation;
+	return location ? `📍 *Location:* ${location}\n` : "";
+}
+
+function getPriceInfo(post: CombinedPostFromDb): string {
+	const childPostPrice = post.childPosts?.[0]?.price;
+	const price = post.price || childPostPrice;
+	return price
+		? `💰 *Price:* ${price} ${post.isPriceFlexible ? "(Negotiable)" : ""}\n`
+		: "";
+}
+
+function getRentalTypeInfo(post: CombinedPostFromDb): string {
+	const childPostRentalType = post.childPosts?.[0]?.isForLongTerm;
+	const rentalType =
+		post.isForLongTerm !== undefined
+			? post.isForLongTerm
+			: childPostRentalType;
+	return rentalType !== undefined
+		? `📋 *Rental type:* ${rentalType ? "Long term" : "Short term"}\n`
+		: "";
+}
+
+function getPropertyTypeInfo(post: CombinedPostFromDb): string {
+	const childPostIsHouse = post.childPosts?.[0]?.isHouse;
+	const isHouse =
+		post.isHouse !== undefined ? post.isHouse : childPostIsHouse;
+	return isHouse !== undefined
+		? `🏠 *Property type:* ${isHouse ? "House" : "Apartment"}\n`
+		: "";
+}
+
+function getDetails(post: CombinedPostFromDb): string {
+	const childPostDetails = post.childPosts?.[0];
+	const detailsList = [
+		post.numberOfRooms || childPostDetails?.numberOfRooms
+			? `🛋 *Number of rooms:* ${
+					post.numberOfRooms || childPostDetails?.numberOfRooms
+			  }\n`
+			: "",
+		post.sizeInM2 || childPostDetails?.sizeInM2
+			? `📏 *Size:* ${post.sizeInM2 || childPostDetails?.sizeInM2} m²\n`
+			: "",
+		post.numberOfBedrooms || childPostDetails?.numberOfBedrooms
+			? `🛏 *Number of bedrooms:* ${
+					post.numberOfBedrooms || childPostDetails?.numberOfBedrooms
+			  }\n`
+			: "",
+		post.numberOfFloors || childPostDetails?.numberOfFloors
+			? `🏢 *Number of floors:* ${
+					post.numberOfFloors || childPostDetails?.numberOfFloors
+			  }\n`
+			: "",
+	].filter(Boolean);
+	return detailsList.length > 0 ? `${detailsList.join("")}\n` : "";
+}
+
+function getAmenities(post: CombinedPostFromDb): string {
+	const childPostAmenities = post.childPosts?.[0];
+	const amenitiesList = [
+		(post.hasParking || childPostAmenities?.hasParking) && "🚗 Parking",
+		(post.hasGarden || childPostAmenities?.hasGarden) && "🌳 Garden",
+		(post.isFullFurnished || childPostAmenities?.isFullFurnished) &&
+			"🛏 Fully furnished",
+		(post.isPartiallyFurnished ||
+			childPostAmenities?.isPartiallyFurnished) &&
+			"🪑 Partially furnished",
+		(post.isNewConstruction || childPostAmenities?.isNewConstruction) &&
+			"🏗 New construction",
+		(post.isRenovated || childPostAmenities?.isRenovated) && "🔨 Renovated",
+	].filter(Boolean);
+	return amenitiesList.length > 0
+		? `✨ *Amenities:* ${amenitiesList.join(", ")}\n`
+		: "";
+}
+
+function getUtilitiesInfo(post: CombinedPostFromDb): string {
+	const childPostUtilities = post.childPosts?.[0];
+	let utilities = "";
+	const doesPriceIncludeElectricity =
+		post.doesPriceIncludeElectricity ||
+		childPostUtilities?.doesPriceIncludeElectricity;
+	const doesPriceIncludeWater =
+		post.doesPriceIncludeWater || childPostUtilities?.doesPriceIncludeWater;
+	const doesPriceIncludeLocalTaxes =
+		post.doesPriceIncludeLocalTaxes ||
+		childPostUtilities?.doesPriceIncludeLocalTaxes;
+	if (
+		doesPriceIncludeElectricity ||
+		doesPriceIncludeWater ||
+		doesPriceIncludeLocalTaxes
+	) {
+		utilities += "💡 *Utilities included:*\n";
+		if (doesPriceIncludeElectricity) utilities += "- Electricity\n";
+		if (doesPriceIncludeWater) utilities += "- Water\n";
+		if (doesPriceIncludeLocalTaxes) utilities += "- Local taxes\n";
+		utilities += "\n";
+	}
+	return utilities;
+}
+
+function getAvailibilityInfo(post: CombinedPostFromDb): string {
+	const childPostAvailableFrom = post.childPosts?.[0]?.availableFrom;
+	const availableFrom = post.availableFrom || childPostAvailableFrom;
+	const showingDate = post.showingDate || post.childPosts?.[0]?.showingDate;
+	const showingTime = post.showingTime || post.childPosts?.[0]?.showingTime;
+	let availability = "";
+	if (availableFrom || showingDate) {
+		availability += "📅 *Available:* " + (availableFrom || "") + "\n";
+		if (showingDate) {
+			availability += `📅 *Showing:* ${showingDate}${
+				showingTime ? " at " + showingTime : ""
+			}\n`;
+		}
+		availability += "\n";
+	}
+	return availability;
+}
+
+function getContactInfo(post: CombinedPostFromDb): string {
+	const childPostContact = post.childPosts?.[0];
+	const phoneNumbers =
+		post.phoneNumbers || childPostContact?.phoneNumbers || [];
+	const publisherName = post.publisherName || childPostContact?.publisherName;
+	const isByBrokerOrAgent =
+		post.isByBrokerOrAgent || childPostContact?.isByBrokerOrAgent;
+	let contact = "";
+	if (phoneNumbers.length) {
+		contact += "📞 *Contact:*\n";
+	}
+	if (publisherName) {
+		contact += `- ${publisherName}${
+			isByBrokerOrAgent ? " (Agent/Broker)" : ""
+		}\n`;
+	}
+	// Phone numbers
+	if (phoneNumbers.length) {
+		phoneNumbers.forEach((phone) => {
+			contact += `- ${phone.number}${
+				phone.forWhatsApp ? " (WhatsApp)" : ""
+			}${phone.forPhoneCall ? " (Call)" : ""}\n`;
+		});
+	}
+	contact += "\n";
+	return contact;
+}
 
 /**
  * Format a CombinedPost into a nice Telegram message
  */
-export function formatPostMessage(post: CombinedPost): string {
-  // Format the title with emojis
-  const title = post.title 
-    ? `🏠 *${post.title}*\n\n` 
-    : (post.isHouse ? '🏠 *House for rent*\n\n' : (post.isApartment ? '🏢 *Apartment for rent*\n\n' : '🏡 *Property for rent*\n\n'));
-  
-  // Original post link - moved to the top for better visibility
-  const postUrl = post.postUrl 
-    ? `🔗 *Original Post:* [View on Facebook](${post.postUrl})\n\n` 
-    : '';
-  
-  // Post text - show the full post text prominently at the top
-  const postText = post.postText 
-    ? `📝 *Post text:*\n${post.postText}\n\n` 
-    : '';
-  
-  // Post date if available
-  const postDateInfo = post.postDate 
-    ? `📆 *Posted on:* ${post.postDate}\n\n` 
-    : '';
-  
-  // Location information
-  let location = '';
-  if (post.location || post.city || post.neighborhood || post.village) {
-    location = '📍 *Location:* ';
-    if (post.city) location += post.city;
-    if (post.neighborhood) location += (post.city ? ', ' : '') + post.neighborhood;
-    if (post.village) location += ((post.city || post.neighborhood) ? ', ' : '') + post.village;
-    if (post.location && !location.includes(post.location)) location += ' - ' + post.location;
-    location += '\n';
-  }
-  
-  // Price information with emoji
-  const price = post.price 
-    ? `💰 *Price:* ${post.price} ${post.isPriceFlexible ? '(Negotiable)' : ''}\n` 
-    : '';
+export function formatPostMessage(post: CombinedPostFromDb): string {
+	// Original post link - moved to the top for better visibility
+	const postUrl = post.postUrl
+		? `🔗 *Original Post:* [View on Facebook](${post.postUrl})\n`
+		: "";
 
-  // Long term rental information
-  const rentalType = post.isForLongTerm !== undefined 
-    ? `📋 *Rental type:* ${post.isForLongTerm ? 'Long term' : 'Short term'}\n` 
-    : '';
+	// Post text - show the full post text prominently at the top
+	const postText = getPostText(post);
 
-  const propertyType = post.isHouse
-    ? '🏠 *Property type:* House\n '
-    : post.isApartment
-    ? '🏢 *Property type:* Apartment\n '
-    : '🏡 *Property type:* Other\n ';
-  
-  // Property details section
-  let details = '';
-  if (post.numberOfRooms || post.sizeInM2 || post.numberOfBedrooms || post.numberOfBathrooms) {
-    details += '🛋 *Property details:*\n';
-    if (post.numberOfRooms) details += `- ${post.numberOfRooms} room${post.numberOfRooms !== 1 ? 's' : ''}\n`;
-    if (post.sizeInM2) details += `- ${post.sizeInM2}m² total size\n`;
-    if (post.builtHouseSizeInM2) details += `- ${post.builtHouseSizeInM2}m² built area\n`;
-    if (post.gardenSizeInM2) details += `- ${post.gardenSizeInM2}m² garden\n`;
-    if (post.numberOfBedrooms) details += `- ${post.numberOfBedrooms} bedroom${post.numberOfBedrooms !== 1 ? 's' : ''}\n`;
-    if (post.numberOfBathrooms) details += `- ${post.numberOfBathrooms} bathroom${post.numberOfBathrooms !== 1 ? 's' : ''}\n`;
-    if (post.numberOfFloors) details += `- ${post.numberOfFloors} floor${post.numberOfFloors !== 1 ? 's' : ''}\n`;
-    details += '\n';
-  }
-  
-  // Amenities section with emojis
-  let amenities = '';
-  const amenitiesList = [
-    post.hasParking && '🚗 Parking',
-    post.hasGarden && '🌳 Garden',
-    post.hasPool && '🏊 Swimming pool',
-    post.hasBalcony && '🪟 Balcony',
-    post.hasView && '🏞 View',
-    post.isFullFurnished && '🛏 Fully furnished',
-    post.isPartiallyFurnished && '🪑 Partially furnished',
-    post.isNewConstruction && '🏗 New construction',
-    post.isRenovated && '🔨 Renovated',
-    post.isGardenMaintained && '✂️ Maintained garden'
-  ].filter(Boolean);
-  
-  if (amenitiesList.length > 0) {
-    amenities = '✨ *Amenities:* ' + amenitiesList.join(', ') + '\n\n';
-  }
-  
-  // Utilities information
-  let utilities = '';
-  if (post.doesPriceIncludeAllUtilities || post.doesPriceIncludeInternet || post.doesPriceIncludeElectricity || post.doesPriceIncludeWater || post.doesPriceIncludeLocalTaxes) {
-    utilities += '💡 *Utilities included:*\n';
-    if (post.doesPriceIncludeAllUtilities) {
-      utilities += '- All utilities included\n';
-    } else {
-      if (post.doesPriceIncludeInternet) utilities += '- Internet\n';
-      if (post.doesPriceIncludeElectricity) utilities += '- Electricity\n';
-      if (post.doesPriceIncludeWater) utilities += '- Water\n';
-      if (post.doesPriceIncludeLocalTaxes) utilities += '- Local taxes\n';
-    }
-    utilities += '\n';
-  }
-  
-  // Availability information
-  let availability = '';
-  if (post.availibleFrom || post.isAvailableNow) {
-    availability = '📅 *Available:* ' + (post.isAvailableNow ? 'Now' : post.availibleFrom) + '\n';
-    if (post.showingDate) {
-      availability += `📅 *Showing:* ${post.showingDate}${post.showingTime ? ' at ' + post.showingTime : ''}\n`;
-    }
-    availability += '\n';
-  }
-  
-  // Contact information
-  let contact = '';
-  if (post.phoneNumbers?.length || post.email || post.postAuthor || post.firstName || post.lastName) {
-    contact += '📞 *Contact:*\n';
-    
-    // Author name - use full name if available
-    if (post.firstName || post.lastName) {
-      contact += `- ${[post.firstName, post.lastName].filter(Boolean).join(' ')}${post.isByBrokerOrAgent ? ' (Agent/Broker)' : ''}\n`;
-    } else if (post.postAuthor) {
-      contact += `- ${post.postAuthor}${post.isByBrokerOrAgent ? ' (Agent/Broker)' : ''}\n`;
-    }
-    
-    // Phone numbers
-    if (post.phoneNumbers?.length) {
-      post.phoneNumbers.forEach(phone => {
-        contact += `- ${phone.number}\n`;
-      });
-    }
-    
-    // Email
-    if (post.email) contact += `- ${post.email}\n`;
-    
-    contact += '\n';
-  }
-  
-  // Post links section - now showing additional links only since main postUrl is at the top
-  let links = '';
-  if (post.postLinks?.length) {
-    links += '🔗 *Additional links:*\n';
-    post.postLinks.forEach((link, index) => {
-      if (index < 3) { // Limit to 3 additional links to avoid extremely long messages
-        links += `- [Link ${index + 1}](${link})\n`;
-      }
-    });
-    links += '\n';
-  }
-  
-  // Combine all sections - added postUrl near the top
-  const message = `${title}${postUrl}${postText}${postDateInfo}${location}${propertyType}${price}${rentalType}\n${details}${amenities}${utilities}${availability}${contact}${links}`;
-  return message;
+	// Post date if available
+	const postDateInfo = getPostDateInfo(post);
+
+	// Location information
+	const location = getLocationInfo(post);
+
+	// Price information with emoji
+	const price = getPriceInfo(post);
+
+	// Long term rental information
+	const rentalType = getRentalTypeInfo(post);
+
+	const propertyType = getPropertyTypeInfo(post);
+
+	// Property details section
+	const details = getDetails(post);
+
+	// Amenities section with emojis
+	const amenities = getAmenities(post);
+
+	// Utilities information
+	const utilities = getUtilitiesInfo(post);
+
+	// Availability information
+	const availability = getAvailibilityInfo(post);
+
+	// Contact information
+	// const contact = getContactInfo(post);
+
+	// Combine all sections - added postUrl near the top
+	const message = `${postUrl}${postText}${postDateInfo}${location}${propertyType}${price}${rentalType}\n${details}${amenities}${utilities}${availability}`;
+	return message;
 }
 
 /**
  * Send a post to the Telegram group
  */
-export async function sendPostToTelegram(post: CombinedPost): Promise<boolean> {
-  try {
-    const message = formatPostMessage(post);
-    const chatId = process.env.TELEGRAM_GROUP_ID as string;
-    
-    // If there are images, send them as a media group
-    if (post.postImages?.length) {
-      const mediaFiles: string[] = [];
-      const mediaGroup: InputMediaPhoto<InputFile>[] = [];
-      
-      // Process up to 10 images (Telegram's maximum for a media group)
-      for (let i = 0; i < Math.min(post.postImages.length, 10); i++) {
-        const imagePath = post.postImages[i];
-        if (imagePath) {
-          mediaFiles.push(imagePath);
-          
-          // Add caption to the first image only
-          mediaGroup.push({
-            type: 'photo',
-            media: new InputFile(imagePath),
-            // Only add caption to the first image
-            ...(i === 0 ? { caption: message, parse_mode: 'Markdown' } : {})
-          });
-        }
-      }
-      
-      if (mediaGroup.length > 0) {
-        // Send media group
-        await bot.api.sendMediaGroup(chatId, mediaGroup);
-        
-        // Clean up temporary files
-        mediaFiles.forEach(file => {
-          fs.unlinkSync(file);
+export async function sendPostToTelegram(
+	post: CombinedPostFromDb
+): Promise<boolean> {
+	try {
+		const message = formatPostMessage(post);
+		const chatId = process.env.TELEGRAM_GROUP_ID as string;
+
+		// If there are images, send them as a media group
+		const attachments = [
+			...(post.allAttechments || []),
+			...(post.childPosts?.flatMap((child) => child.allAttechments) ||
+				[]),
+		];
+		console.log(
+			`Sending post ${post.postId} to Telegram with ${attachments.length} attachments`
+		);
+		if (attachments.length) {
+			const mediaFiles: string[] = [];
+			const mediaGroup: (
+				| InputMediaPhoto<InputFile>
+				| InputMediaVideo<InputFile>
+			)[] = [];
+
+			// Process up to 10 images (Telegram's maximum for a media group)
+			for (const attachment of attachments) {
+				const localPath = attachment.localPath;
+
+				mediaFiles.push(localPath);
+
+				// Add caption to the first image only
+				mediaGroup.push({
+					type:
+						attachment.type === "video"
+							? "video"
+							: "photo",
+					media: new InputFile(localPath)
+				});
+			}
+
+      console.log(
+        `Preparing to send ${mediaGroup.length} media items to Telegram with attachments`, {
+          mediaGroup
         });
-      } else {
-        // If no images were successfully downloaded, send as text message
-        await bot.api.sendMessage(chatId, message, {
-          parse_mode: 'Markdown'
-        });
-      }
-    } else {
-      // Send as a text message if there are no images
-      await bot.api.sendMessage(chatId, message, {
-        parse_mode: 'Markdown'
-      });
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Error sending post to Telegram:', error);
-    return false;
-  }
+
+			if (mediaGroup.length > 0) {
+				// Send media group
+				await bot.api.sendMediaGroup(chatId, mediaGroup);
+
+			} 
+			
+		} 
+			// Send as a text message if there are no images
+			await bot.api.sendMessage(chatId, message, {
+				parse_mode: "Markdown",
+			});
+		
+
+		return true;
+	} catch (error) {
+		console.error("Error sending post to Telegram:", error);
+		return false;
+	}
 }

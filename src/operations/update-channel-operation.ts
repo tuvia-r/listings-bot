@@ -19,6 +19,10 @@ export async function updateChannelWithNewPosts() {
     // Process each post
     for (const post of unprocessedPosts) {
       try {
+        if(!post || !post.postId) {
+          console.warn('Skipping invalid post:', post);
+          continue;
+        }
         console.log(`Sending post ${post.postId} to Telegram...`, post);
         
         // Send to Telegram
@@ -32,7 +36,7 @@ export async function updateChannelWithNewPosts() {
           processedCount++;
           
           // Add a small delay between sends to avoid hitting Telegram rate limits
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1000 * 60)); // 60 seconds
         } else {
           console.error(`Failed to send post ${post.postId} to Telegram`);
         }

@@ -1,13 +1,10 @@
-import { interceptGraphQlResponses } from "./utils/intrecept";
+import { interceptGraphQlResponses } from "./intrecept-graphql";
 import { getBrowser } from "../browser/puppeteer";
 import { scheduler } from "timers/promises";
-import { authenticate } from "../browser/auth";
-import { extractPostData, FormattedFacebookPost } from "./extractors/post";
+import { extractGroupFeedPost, GroupFeedPost } from "./group-feed-extractor";
 
 export async function* groupPosts(groupId: string) {
     const browserInstance = await getBrowser();
-
-    await authenticate(browserInstance);
 
     const page = await browserInstance.newPage();
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36');
@@ -16,7 +13,7 @@ export async function* groupPosts(groupId: string) {
     const processedPostIds = new Set<string>();
 
     // Store all posts with the correct FormattedFacebookPost type
-    const allPosts: FormattedFacebookPost[] = [];
+    const allPosts: GroupFeedPost[] = [];
     const maxPosts = 300;
 
     // Intercept GraphQL responses to extract post data
@@ -31,23 +28,23 @@ export async function* groupPosts(groupId: string) {
                     break;
                 }
 
-                // Pass the groupId to extractPostData for correct URL generation
-                const formattedPosts = await extractPostData(item, browserInstance, groupId);
-                console.log(`Extracted ${formattedPosts.length} initial posts from GraphQL response`);
-                for (const post of formattedPosts) {
-                    if (post.postId && !processedPostIds.has(post.postId)) {
-                        processedPostIds.add(post.postId);
-                        allPosts.push(post);
+                const extractedPosts = await extractGroupFeedPost(item);
+                for (const post of extractedPosts) {
+                    if (processedPostIds.has(post.postId)) {
+                        console.log(`Post with ID ${post.postId} already processed, skipping...`);
+                        continue; // Skip already processed posts
                     }
+                    processedPostIds.add(post.postId); // Mark this post as processed
+                    allPosts.push(post);
+                    console.log(`Post with ID ${post.postId} extracted and added to allPosts.`);
                 }
-                await scheduler.wait(1000 * 10); // Wait for 1 second between processing posts
             }
         }
     });
 
     await page.goto(`https://www.facebook.com/groups/${groupId}/`, {
         waitUntil: 'networkidle2',
-        timeout: 1000 * 60,
+        timeout: 1000 * 10,
     });
 
     async function scroll() {
@@ -55,7 +52,7 @@ export async function* groupPosts(groupId: string) {
             document.scrollingElement?.scrollTo(0, document.scrollingElement.scrollHeight);
         });
         // Wait for new posts to load 
-        await scheduler.wait(1000 * (Math.random() * 10) + (1000 * 60));
+        await scheduler.wait(1000 * (Math.random() * 10));
     }
 
     console.log('Page loaded, waiting for initial content...');

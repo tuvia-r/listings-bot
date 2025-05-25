@@ -16,3 +16,5 @@ dist/
 .dbs/
 .media/
 .cache/
+.attachments/
+.logs/
