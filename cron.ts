@@ -55,6 +55,6 @@ times.forEach((time) => {
 	});
 });
 
-runStart(); // Run immediately on startup
+// runStart(); // Run immediately on startup
 
 console.log("Cron jobs scheduled for 09:00, 12:00, 17:00, 22:00 daily.");

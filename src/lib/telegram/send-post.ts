@@ -4,6 +4,7 @@ import { InputFile } from "grammy";
 import type { InputMediaPhoto, InputMediaVideo } from "@grammyjs/types";
 import { searchCoords } from "../maps/coords";
 import { createStaticMap } from "../maps/static";
+import pRetry from "p-retry";
 
 function getPostText(post: CombinedPostFromDb): string {
 	const text = [
@@ -188,9 +189,7 @@ function getContactInfo(post: CombinedPostFromDb): string {
  */
 export function formatPostMessage(post: CombinedPostFromDb): string {
 	// Original post link - moved to the top for better visibility
-	const postUrl = post.postUrl
-		? `[View on Facebook](${post.postUrl})\n`
-		: "";
+	const postUrl = post.postUrl ? `[View on Facebook](${post.postUrl})\n` : "";
 
 	// Post text - show the full post text prominently at the top
 	const postText = getPostText(post);
@@ -248,64 +247,86 @@ export async function sendPostToTelegram(
 		console.log(
 			`Sending post ${post.postId} to Telegram with ${attachments.length} attachments`
 		);
+		const mediaGroup: (
+			| InputMediaPhoto<InputFile>
+			| InputMediaVideo<InputFile>
+		)[] = [];
 		if (attachments.length) {
-			const mediaFiles: string[] = [];
-			const mediaGroup: (
-				| InputMediaPhoto<InputFile>
-				| InputMediaVideo<InputFile>
-			)[] = [];
-
 			// Process up to 10 images (Telegram's maximum for a media group)
 			for (const attachment of attachments) {
 				const localPath = attachment.localPath;
 
-				mediaFiles.push(localPath);
-
 				// Add caption to the first image only
 				mediaGroup.push({
-					type:
-						attachment.type === "video"
-							? "video"
-							: "photo",
-					media: new InputFile(localPath)
+					type: attachment.type === "video" ? "video" : "photo",
+					media: new InputFile(localPath),
 				});
 			}
 
-      const location = post.location || post.childPosts?.[0]?.location;
-      if(location) {
-        const locationCoords = await searchCoords(location);
-        if (locationCoords) {
-          const mapPath = `./.maps/${post.postId}-map.png`;
-          await createStaticMap(locationCoords, mapPath);
-          mediaGroup.push({
-            type: "photo",
-            media: new InputFile(mapPath)
-          });
-          // Add location link to the message
-          const lonStr = locationCoords[0].toFixed(6);
-          const latStr = locationCoords[1].toFixed(6);
-          const locationLink = `https://www.google.com/maps/search/?api=1&query=${latStr},${lonStr}`;
-          message += `📍 *Location:* [${location}](${locationLink})\n`;
-        }
-      }
+			const location = post.location || post.childPosts?.[0]?.location;
+			if (location) {
+				const locationCoords = await searchCoords(location);
+				if (locationCoords) {
+					const mapPath = `./.maps/${post.postId}-map.png`;
+					await createStaticMap(locationCoords, mapPath);
+					mediaGroup.push({
+						type: "photo",
+						media: new InputFile(mapPath),
+					});
+					// Add location link to the message
+					const lonStr = locationCoords[0].toFixed(6);
+					const latStr = locationCoords[1].toFixed(6);
+					const locationLink = `https://www.google.com/maps/search/?api=1&query=${latStr},${lonStr}`;
+					message += `📍 *Location:* [${location}](${locationLink})\n`;
+				}
+			}
 
-      console.log(
-        `Preparing to send ${mediaGroup.length} media items to Telegram with attachments`, {
-          mediaGroup
-        });
+			console.log(
+				`Preparing to send ${mediaGroup.length} media items to Telegram with attachments`,
+				{
+					mediaGroup,
+				}
+			);
+		}
 
-			if (mediaGroup.length > 0) {
-				// Send media group
-				await bot.api.sendMediaGroup(chatId, mediaGroup);
-
-			} 
-			
-		} 
-			// Send as a text message if there are no images
-			await bot.api.sendMessage(chatId, message, {
-				parse_mode: "Markdown",
-			});
-		
+		if (mediaGroup.length > 0) {
+			mediaGroup[0].caption = message; // Set caption for the first media item
+      mediaGroup[0].parse_mode = "Markdown"; // Set parse mode for the caption
+		}
+		let mediaSent = false;
+		let textAssDescription = true;
+		await pRetry(
+			async () => {
+				if (mediaGroup.length > 0 && !mediaSent) {
+					// Send media group
+					await bot.api.sendMediaGroup(chatId, mediaGroup);
+					mediaSent = true;
+				}
+				if (!textAssDescription) {
+					// Send as a text message if there are no images
+					await bot.api.sendMessage(chatId, message, {
+						parse_mode: "Markdown",
+					});
+				}
+			},
+			{
+				retries: 3,
+				factor: 2,
+				minTimeout: 1000,
+				maxTimeout: 1000 * 60, // 1 minute
+				onFailedAttempt: (error) => {
+					if (/too long/.test(error.message)) {
+						console.warn(
+							`Message too long, sending as text instead: ${error.message}`
+						);
+						mediaGroup.forEach((item) => {
+							delete item.caption; // Truncate caption to avoid Telegram limits
+						});
+						textAssDescription = true; // Fallback to text if media group fails
+					}
+				},
+			}
+		);
 
 		return true;
 	} catch (error) {

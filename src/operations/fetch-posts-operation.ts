@@ -34,6 +34,8 @@ async function savePost(
 
 const MAX_NEW_POSTS = 30;
 const MAX_POSTS = 50; // Maximum number of posts to process
+
+const MAX_POST_AGE = 1000 * 60 * 60 * 24 * 60; // about 2 months
 export async function fetchPostsOperation(groupId: string, browserInstance: Browser) {
 	const posts = groupPosts(groupId, browserInstance);
 
@@ -53,6 +55,10 @@ export async function fetchPostsOperation(groupId: string, browserInstance: Brow
 				);
 				continue;
 			}
+            if(post.creationTime && post.creationTime < Date.now() - MAX_POST_AGE) {
+                console.log(`Skipping post ${post.postId} due to age: ${post.creationTime}`);
+                continue;
+            }
 			console.log(`Processing post ${post.postId}...`);
 			// Check if the post already exists in the database
 			const existingPost = await getPostById(post.postId);
@@ -86,6 +92,9 @@ export async function fetchPostsOperation(groupId: string, browserInstance: Brow
 			if (success) {
 				// Update the processedAt timestamp
 				await markPostAsProcessed(post.postId);
+                await Promise.all(
+                    post.childrenIds?.map((childId) => markPostAsProcessed(childId)) || []
+                );
 			}
 			newPostsCount++;
 		} catch (error) {
