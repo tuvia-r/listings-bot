@@ -1,5 +1,5 @@
 import { client } from './client';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { postsTable, CombinedPost, dbRecordToPost, postToDbRecord, PostProcessingStatus, PostToPostTable } from './schemas/posts';
 
 /**
@@ -87,7 +87,10 @@ export async function getUnprocessedPosts() {
 
     const unprocessedPosts = await client
       .query.postsTable.findMany({
-        where: eq(postsTable.processingStatus, PostProcessingStatus.Pending),
+        where: and(
+          eq(postsTable.processingStatus, PostProcessingStatus.Pending),
+          eq(postsTable.isHouseRentalListing, 1)
+        ),
         with: {
           childPosts: {
             //@ts-ignore

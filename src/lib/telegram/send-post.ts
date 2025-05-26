@@ -1,8 +1,9 @@
 import { bot } from "./bot";
 import { CombinedPostFromDb } from "../db/schemas/posts";
-import fs from "fs";
 import { InputFile } from "grammy";
 import type { InputMediaPhoto, InputMediaVideo } from "@grammyjs/types";
+import { searchCoords } from "../maps/coords";
+import { createStaticMap } from "../maps/static";
 
 function getPostText(post: CombinedPostFromDb): string {
 	const text = [
@@ -27,7 +28,7 @@ function getPostDateInfo(post: CombinedPostFromDb): string {
 		? `📆 *Posted on:* ${new Date(
 				post.creationTime!
 		  ).toLocaleDateString()} (original) / ${new Date(
-				childPostDate
+				childPostDate!
 		  ).toLocaleDateString()} (child)\n`
 		: `📆 *Posted on:* ${new Date(creationTime!).toLocaleDateString()}\n`;
 	return creationTime ? dateText : "";
@@ -188,7 +189,7 @@ function getContactInfo(post: CombinedPostFromDb): string {
 export function formatPostMessage(post: CombinedPostFromDb): string {
 	// Original post link - moved to the top for better visibility
 	const postUrl = post.postUrl
-		? `🔗 *Original Post:* [View on Facebook](${post.postUrl})\n`
+		? `[View on Facebook](${post.postUrl})\n`
 		: "";
 
 	// Post text - show the full post text prominently at the top
@@ -197,8 +198,8 @@ export function formatPostMessage(post: CombinedPostFromDb): string {
 	// Post date if available
 	const postDateInfo = getPostDateInfo(post);
 
-	// Location information
-	const location = getLocationInfo(post);
+	// // Location information
+	// const location = getLocationInfo(post);
 
 	// Price information with emoji
 	const price = getPriceInfo(post);
@@ -224,7 +225,7 @@ export function formatPostMessage(post: CombinedPostFromDb): string {
 	// const contact = getContactInfo(post);
 
 	// Combine all sections - added postUrl near the top
-	const message = `${postUrl}${postText}${postDateInfo}${location}${propertyType}${price}${rentalType}\n${details}${amenities}${utilities}${availability}`;
+	const message = `${postUrl}${postText}${postDateInfo}${propertyType}${price}${rentalType}${details}${amenities}${utilities}${availability}`;
 	return message;
 }
 
@@ -235,7 +236,7 @@ export async function sendPostToTelegram(
 	post: CombinedPostFromDb
 ): Promise<boolean> {
 	try {
-		const message = formatPostMessage(post);
+		let message = formatPostMessage(post);
 		const chatId = process.env.TELEGRAM_GROUP_ID as string;
 
 		// If there are images, send them as a media group
@@ -269,6 +270,24 @@ export async function sendPostToTelegram(
 					media: new InputFile(localPath)
 				});
 			}
+
+      const location = post.location || post.childPosts?.[0]?.location;
+      if(location) {
+        const locationCoords = await searchCoords(location);
+        if (locationCoords) {
+          const mapPath = `./.maps/${post.postId}-map.png`;
+          await createStaticMap(locationCoords, mapPath);
+          mediaGroup.push({
+            type: "photo",
+            media: new InputFile(mapPath)
+          });
+          // Add location link to the message
+          const lonStr = locationCoords[0].toFixed(6);
+          const latStr = locationCoords[1].toFixed(6);
+          const locationLink = `https://www.google.com/maps/search/?api=1&query=${latStr},${lonStr}`;
+          message += `📍 *Location:* [${location}](${locationLink})\n`;
+        }
+      }
 
       console.log(
         `Preparing to send ${mediaGroup.length} media items to Telegram with attachments`, {

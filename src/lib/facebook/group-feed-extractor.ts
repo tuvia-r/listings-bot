@@ -180,7 +180,7 @@ async function extractFromNode(node: any): Promise<GroupFeedPost> {
 			groupName,
 			text,
 			allAttechments: compact(allAttechments.map(extractAttachment)),
-			creationTime,
+			creationTime: creationTime ? creationTime * 1000 : undefined,
 			postUrl,
 			publisherName,
 			publisherUrl,

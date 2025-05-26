@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
-import { ExtractedPostDetails } from '../../gemini/extract-post-details';
+import { ExtractedPostDetails } from '../../llm/extract-post-details';
 import { GroupFeedPost, GroupFeedPostAttachment } from '../../facebook/group-feed-extractor';
 import { relations } from 'drizzle-orm';
 

@@ -1,11 +1,9 @@
 import { interceptGraphQlResponses } from "./intrecept-graphql";
-import { getBrowser } from "../browser/puppeteer";
 import { scheduler } from "timers/promises";
 import { extractGroupFeedPost, GroupFeedPost } from "./group-feed-extractor";
+import { Browser } from "rebrowser-puppeteer";
 
-export async function* groupPosts(groupId: string) {
-    const browserInstance = await getBrowser();
-
+export async function* groupPosts(groupId: string, browserInstance: Browser) {
     const page = await browserInstance.newPage();
     await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36');
 
@@ -44,7 +42,7 @@ export async function* groupPosts(groupId: string) {
 
     await page.goto(`https://www.facebook.com/groups/${groupId}/`, {
         waitUntil: 'networkidle2',
-        timeout: 1000 * 10,
+        timeout: 1000 * 30,
     });
 
     async function scroll() {
@@ -76,6 +74,5 @@ export async function* groupPosts(groupId: string) {
         }
     }
 
-    await browserInstance.close();
-    console.log('Browser closed.');
+    page.close();
 }
