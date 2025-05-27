@@ -1,12 +1,11 @@
 import { scheduler } from "timers/promises";
-import { getPostById, markPostAsProcessed, setPost } from "../lib/db/posts";
+import { getPostById, setPost } from "../lib/db/posts";
 import { CombinedPost } from "../lib/db/schemas/posts";
 import { groupPosts } from "../lib/facebook/group-posts-generator";
 import {
 	ExtractedPostDetails,
 	extractPostDetails,
 } from "../lib/llm/extract-post-details";
-import { sendPostToTelegram } from "../lib/telegram/send-post";
 import { downloadFile } from "../lib/fs/download-file";
 import { GroupFeedPost } from "../lib/facebook/group-feed-extractor";
 import { Browser } from "rebrowser-puppeteer";
@@ -15,6 +14,11 @@ async function savePost(
 	post: GroupFeedPost,
 	extractedDetails: ExtractedPostDetails
 ): Promise<CombinedPost> {
+    const existingPost = await getPostById(post.postId);
+
+    if (existingPost) {
+        return existingPost; // If the post already exists, return it
+    }
 	const combinedPost: CombinedPost = {
 		...post,
 		...extractedDetails,
@@ -32,7 +36,7 @@ async function savePost(
 	return combinedPost;
 }
 
-const MAX_NEW_POSTS = 30;
+const MAX_NEW_POSTS = 15;
 const MAX_POSTS = 50; // Maximum number of posts to process
 
 const MAX_POST_AGE = 1000 * 60 * 60 * 24 * 60; // about 2 months
@@ -56,7 +60,7 @@ export async function fetchPostsOperation(groupId: string, browserInstance: Brow
 				continue;
 			}
             if(post.creationTime && post.creationTime < Date.now() - MAX_POST_AGE) {
-                console.log(`Skipping post ${post.postId} due to age: ${post.creationTime}`);
+                console.log(`Skipping post ${post.postId} due to age: ${new Date(post.creationTime)}`);
                 continue;
             }
 			console.log(`Processing post ${post.postId}...`);
@@ -83,18 +87,6 @@ export async function fetchPostsOperation(groupId: string, browserInstance: Brow
 					post
 				);
 				continue;
-			}
-
-			const success = await sendPostToTelegram(
-				(await getPostById(post.postId))!
-			);
-
-			if (success) {
-				// Update the processedAt timestamp
-				await markPostAsProcessed(post.postId);
-                await Promise.all(
-                    post.childrenIds?.map((childId) => markPostAsProcessed(childId)) || []
-                );
 			}
 			newPostsCount++;
 		} catch (error) {

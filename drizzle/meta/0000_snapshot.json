@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "da09c105-5d8e-4953-826c-56edccb4aa20",
+  "id": "60db56e0-5785-46eb-a7cf-ba2c04211fd5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "post_to_post": {
@@ -185,14 +185,6 @@
           "autoincrement": false,
           "default": "'null'"
         },
-        "is_price_flexible": {
-          "name": "is_price_flexible",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
         "is_house": {
           "name": "is_house",
           "type": "integer",
@@ -344,6 +336,62 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "summary_in_hebrew": {
+          "name": "summary_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "post_description_in_hebrew": {
+          "name": "post_description_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "post_location_in_hebrew": {
+          "name": "post_location_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'null'"
+        },
+        "listing_size_in_hebrew": {
+          "name": "listing_size_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'null'"
+        },
+        "post_price_in_hebrew": {
+          "name": "post_price_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'null'"
+        },
+        "post_extra_details_in_hebrew": {
+          "name": "post_extra_details_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'null'"
+        },
+        "post_contact_info_in_hebrew": {
+          "name": "post_contact_info_in_hebrew",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'null'"
         }
       },
       "indexes": {

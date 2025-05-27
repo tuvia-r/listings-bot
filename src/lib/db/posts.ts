@@ -92,7 +92,8 @@ export async function getUnprocessedPosts() {
 		const unprocessedPosts = await client.query.postsTable.findMany({
 			where: and(
 				eq(postsTable.processingStatus, PostProcessingStatus.Pending),
-				eq(postsTable.isHouseRentalListing, 1)
+				eq(postsTable.isHouseRentalListing, 1),
+				eq(postsTable.isHouse, 1) // Only get parent posts
 			),
 			with: {
 				childPosts: {

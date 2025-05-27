@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql, sum } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
 import { ExtractedPostDetails } from '../../llm/extract-post-details';
 import { GroupFeedPost, GroupFeedPostAttachment } from '../../facebook/group-feed-extractor';
@@ -43,7 +43,6 @@ export const postsTable = sqliteTable('posts', {
   isHouseRentalListing: integer('is_house_rental_listing').notNull().default(0),
   location: text('location').notNull().default(''),
   price: real('price').$type<number | null>().default(null),
-  isPriceFlexible: integer('is_price_flexible').notNull().default(0),
   isHouse: integer('is_house').notNull().default(0),
   sizeInM2: real('size_in_m2').$type<number | null>().default(null),
   numberOfFloors: integer('number_of_floors').$type<number | null>().default(null),
@@ -63,6 +62,13 @@ export const postsTable = sqliteTable('posts', {
   isNewConstruction: integer('is_new_construction').notNull().default(0),
   isRenovated: integer('is_renovated').notNull().default(0),
   isByBrokerOrAgent: integer('is_by_broker_or_agent').notNull().default(0),
+  postSummaryInHebrow: text('summary_in_hebrew').notNull().default(''),
+  postDescriptionInHebrew: text('post_description_in_hebrew').notNull().default(''),
+  postLocationInHebrew: text('post_location_in_hebrew').$type<string | null>().default(null),
+  listingSizeInHebrow: text('listing_size_in_hebrew').$type<string | null>().default(null),
+  postPriceInHebrew: text('post_price_in_hebrew').$type<string | null>().default(null),
+  postExtraDetailsInHebrew: text('post_extra_details_in_hebrew').$type<string | null>().default(null),
+  postContactInfoInHebrew: text('post_contact_info_in_hebrew').$type<string | null>().default(null),
 });
 
 export const PostToPostTable = sqliteTable('post_to_post', {
@@ -106,6 +112,13 @@ function combinedPostToDb(post: CombinedPost): Record<string, any> {
     postAttachments: JSON.stringify(post.allAttechments || '[]'),
     phoneNumbers: JSON.stringify(post.phoneNumbers || '[]'),
     creationTime: post.creationTime,
+    postSummaryInHebrow: post.postSummaryInHebrow || '',
+    postDescriptionInHebrew: post.postDescriptionInHebrew || '',
+    postLocationInHebrew: post.postLocationInHebrew || null,
+    listingSizeInHebrow: post.listingSizeInHebrow || null,
+    postPriceInHebrew: post.postPriceInHebrew || null,
+    postExtraDetailsInHebrew: post.postExtraDetailsInHebrew || null,
+    postContactInfoInHebrew: post.postContactInfoInHebrew || null,
     createdAt: Date.now(),
     updatedAt: Date.now()
   };
@@ -114,7 +127,6 @@ function combinedPostToDb(post: CombinedPost): Record<string, any> {
   if (post.isHouseRentalListing !== undefined) dbRecord.isHouseRentalListing = post.isHouseRentalListing ? 1 : 0;
   if (post.location) dbRecord.location = post.location;
   if (post.price !== undefined) dbRecord.price = post.price;
-  if (post.isPriceFlexible !== undefined) dbRecord.isPriceFlexible = post.isPriceFlexible ? 1 : 0;
   if (post.isHouse !== undefined) dbRecord.isHouse = post.isHouse ? 1 : 0;
   if (post.sizeInM2 !== undefined) dbRecord.sizeInM2 = post.sizeInM2;
   if (post.numberOfFloors !== undefined) dbRecord.numberOfFloors = post.numberOfFloors;
@@ -162,6 +174,14 @@ export function dbRecordToPost(dbRecord: Record<string, any>): CombinedPostFromD
     creationTime: dbRecord.creationTime,
     createdAt: dbRecord.createdAt,
     updatedAt: dbRecord.updatedAt,
+    postSummaryInHebrow: dbRecord.postSummaryInHebrow || '',
+    postDescriptionInHebrew: dbRecord.postDescriptionInHebrew || '',
+    postLocationInHebrew: dbRecord.postLocationInHebrew || null,
+    listingSizeInHebrow: dbRecord.listingSizeInHebrow || null,
+    postPriceInHebrew: dbRecord.postPriceInHebrew || null,
+    postExtraDetailsInHebrew: dbRecord.postExtraDetailsInHebrew || null,
+    postContactInfoInHebrew: dbRecord.postContactInfoInHebrew || null,
+    
   } as CombinedPost & {
     createdAt: number;
     updatedAt: number;
@@ -173,7 +193,6 @@ export function dbRecordToPost(dbRecord: Record<string, any>): CombinedPostFromD
   post.isHouseRentalListing = Boolean(dbRecord.isHouseRentalListing);
   post.location = dbRecord.location || '';
   post.price = dbRecord.price !== null ? dbRecord.price : undefined;
-  post.isPriceFlexible = Boolean(dbRecord.isPriceFlexible);
   post.isHouse = Boolean(dbRecord.isHouse);
   post.sizeInM2 = dbRecord.sizeInM2 !== null ? dbRecord.sizeInM2 : undefined;
   post.numberOfFloors = dbRecord.numberOfFloors !== null ? dbRecord.numberOfFloors : undefined;

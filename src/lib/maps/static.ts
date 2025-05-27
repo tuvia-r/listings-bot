@@ -6,7 +6,7 @@ const options: StaticMaps.StaticMapsOptions = {
 };
 
 const markerOptions: Partial<StaticMaps.AddMarkerOptions> = {
-	img: `./asssets/marker.png`, // can also be a URL
+	img: `./assets/marker.png`, // can also be a URL
 	width: 512,
 	height: 843,
 	drawHeight: 85,

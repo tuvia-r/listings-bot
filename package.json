@@ -38,6 +38,7 @@
     "rebrowser-puppeteer": "^24.8.1",
     "sharp": "^0.34.2",
     "staticmaps": "^1.13.1",
+    "telegramify-markdown": "^1.3.0",
     "zod": "^3.25.27"
   }
 }

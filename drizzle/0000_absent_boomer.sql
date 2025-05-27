@@ -23,7 +23,6 @@ CREATE TABLE `posts` (
 	`is_house_rental_listing` integer DEFAULT 0 NOT NULL,
 	`location` text DEFAULT '' NOT NULL,
 	`price` real DEFAULT 'null',
-	`is_price_flexible` integer DEFAULT 0 NOT NULL,
 	`is_house` integer DEFAULT 0 NOT NULL,
 	`size_in_m2` real DEFAULT 'null',
 	`number_of_floors` integer DEFAULT 'null',
@@ -42,7 +41,14 @@ CREATE TABLE `posts` (
 	`showing_time` text DEFAULT 'null',
 	`is_new_construction` integer DEFAULT 0 NOT NULL,
 	`is_renovated` integer DEFAULT 0 NOT NULL,
-	`is_by_broker_or_agent` integer DEFAULT 0 NOT NULL
+	`is_by_broker_or_agent` integer DEFAULT 0 NOT NULL,
+	`summary_in_hebrew` text DEFAULT '' NOT NULL,
+	`post_description_in_hebrew` text DEFAULT '' NOT NULL,
+	`post_location_in_hebrew` text DEFAULT 'null',
+	`listing_size_in_hebrew` text DEFAULT 'null',
+	`post_price_in_hebrew` text DEFAULT 'null',
+	`post_extra_details_in_hebrew` text DEFAULT 'null',
+	`post_contact_info_in_hebrew` text DEFAULT 'null'
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `posts_post_id_unique` ON `posts` (`post_id`);

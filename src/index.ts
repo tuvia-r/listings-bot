@@ -26,9 +26,10 @@ export async function main ()  {
         console.error('Error during scraping operations:', error);
     }
 
-    await browserInstance.close();
-    console.log('Browser closed.');
+    console.log('All scraping operations completed. Closing browser...');
+    browserInstance.close().catch(error => console.error('Error closing browser:', error));
 
+    console.log('Processing posts, and updating channel...');
     await updateChannelWithNewPosts();
     console.log('Finished processing posts.');
 
