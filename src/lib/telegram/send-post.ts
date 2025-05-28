@@ -1,14 +1,21 @@
 import { sendMessageWithAttachments } from "./bot";
-import { CombinedPostFromDb } from "../db/schemas/posts";
-import { InputFile } from "grammy";
-import type { InputMediaPhoto, InputMediaVideo } from "@grammyjs/types";
+import { PostWithRelations } from "../db/schemas/posts";
 import { searchCoords } from "../maps/coords";
 import { createStaticMap } from "../maps/static";
 import { readFile } from "fs/promises";
-import telegramifyMarkdown from 'telegramify-markdown';
+import { compact } from "lodash-es";
+import { getLogger } from "../../utils/logger";
+import { existsSync, mkdirSync } from "fs";
+import { MAPS_DIR, TELEGRAM_GROUP_ID } from "../../utils/consts";
 
-function getPostDateInfo(post: CombinedPostFromDb): string {
-	const childPostDate = post.childPosts?.[0]?.creationTime;
+const logger = getLogger('send-post');
+
+if(!existsSync(MAPS_DIR)) {
+	mkdirSync(MAPS_DIR, { recursive: true });
+}
+
+function getPostDateInfo(post: PostWithRelations): string {
+	const childPostDate = post.childPosts?.[0]?.childPost.creationTime;
 	const creationTime = post.creationTime || childPostDate;
 	const hasTwoDates =
 		post.creationTime &&
@@ -29,58 +36,46 @@ function getPostDateInfo(post: CombinedPostFromDb): string {
 /**
  * Format a CombinedPost into a nice Telegram message
  */
-export async function formatPostMessage(post: CombinedPostFromDb, locationUrl: string): Promise<string> {
+export async function formatPostMessage(post: PostWithRelations, locationUrl: string): Promise<string> {
 	const postMdTemplate = await readFile('./assets/post-template.md', 'utf-8');
 
-	const originalText = [post.text, ...(post.childPosts?.map(child => child.text) || [])].join('\n --- \n')
+	const originalText = [post.text, ...(post.childPosts?.map(child => child.childPost.text) || [])].join('\n --- \n')
 
 	const postMkdn = postMdTemplate
-		.replace("$title$", post.postSummaryInHebrow ?? '-')
+		.replace("$title$", post.postSummary ?? '-')
 		.replace("$originalUrl$", post.postUrl ?? '-')
-		.replace("$content$", post.postDescriptionInHebrew ?? '-')
+		.replace("$content$", post.postDescription ?? '-')
 		.replace("$original$", originalText || '-')
-		.replace("$price$", post.postPriceInHebrew ?? 'לא צויין מחיר')
-		.replace("$location$", post.postLocationInHebrew ?? '-')
+		.replace("$price$", post.postPrice ?? 'לא צויין מחיר')
+		.replace("$location$", post.postLocation ?? '-')
 		.replace("$locationUrl$", locationUrl)
-		.replace("$size$", post.listingSizeInHebrow ?? 'לא צויין גודל')
+		.replace("$size$", post.listingSize ?? 'לא צויין גודל')
 		.replace("$availableFrom$", post.availableFrom ? new Date(post.availableFrom).toLocaleDateString('he-IL') : 'לא צויין')
-		.replace("$extraDetails$", post.postExtraDetailsInHebrew ?? '')
-		.replace("$contactInfo$", post.postContactInfoInHebrew ?? 'לא צויין פרטי קשר')
+		.replace("$extraDetails$", post.postExtraDetails ?? '')
+		.replace("$contactInfo$", post.postContactInfo ?? 'לא צויין פרטי קשר')
 		.replace("$date$", getPostDateInfo(post));
 
 	return postMkdn;
-// 	return `
-// ${getPostDateInfo(post)}
-// [${post.postSummaryInHebrow}](${post.postUrl})
-// ${post.postDescriptionInHebrew}
-// 🏷️ ${post.price || "-"}
-// ✅ ${post.availableFrom ? new Date(post.availableFrom).toLocaleDateString('he-IL') : "-"}
-// 📏 ${post.listingSizeInHebrow || "-"}
-// 📃 ${post.postExtraDetailsInHebrew || "-"}
-// ☎️ ${post.postContactInfoInHebrew || "-"}
-// 📍 [${post.postLocationInHebrew || "-"}](${locationUrl})
-// `;
-
 }
 
 /**
  * Send a post to the Telegram group
  */
 export async function sendPostToTelegram(
-	post: CombinedPostFromDb
+	post: PostWithRelations
 ): Promise<boolean> {
 	try {
-		const locationUrl = `https://www.google.com/maps/search/?api=1&query=${post.postLocationInHebrew}`;
+		const locationUrl = `https://www.google.com/maps/search/?api=1&query=${post.postLocation}`;
 		const message = await formatPostMessage(post, locationUrl);
-		const chatId = process.env.TELEGRAM_GROUP_ID as string;
+		const chatId = TELEGRAM_GROUP_ID;
 
 		// If there are images, send them as a media group
-		const attachments = [
-			...(post.allAttechments || []),
-			...(post.childPosts?.flatMap((child) => child.allAttechments) ||
+		const attachments = compact([
+			...(post.postAttachments || []),
+			...(post.childPosts?.flatMap((child) => child.childPost.postAttachments) ||
 				[]),
-		];
-		console.log(
+		]);
+		logger.info(
 			`Sending post ${post.postId} to Telegram with ${attachments.length} attachments`
 		);
 		const mediaGroup: {type: 'video' | 'photo'; localPath: string}[] = [];
@@ -96,11 +91,11 @@ export async function sendPostToTelegram(
 				});
 			}
 
-			const location = post.location || post.childPosts?.[0]?.location;
+			const location = post.location || post.childPosts?.[0]?.childPost.location;
 			if (location) {
 				const locationCoords = await searchCoords(location);
 				if (locationCoords) {
-					const mapPath = `./.maps/${post.postId}-map.png`;
+					const mapPath = `${MAPS_DIR}/${post.postId}-map.png`;
 					await createStaticMap(locationCoords, mapPath);
 					mediaGroup.push({
 						type: "photo",
@@ -109,7 +104,7 @@ export async function sendPostToTelegram(
 				}
 			}
 
-			console.log(
+			logger.log(
 				`Preparing to send ${mediaGroup.length} media items to Telegram with attachments`,
 				{
 					mediaGroup,
@@ -125,7 +120,7 @@ export async function sendPostToTelegram(
 
 		return true;
 	} catch (error) {
-		console.error("Error sending post to Telegram:", error);
+		logger.error("Error sending post to Telegram:", error);
 		return false;
 	}
 }

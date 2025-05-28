@@ -1,4 +1,7 @@
 import StaticMaps from "staticmaps";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger("static-maps");
 
 const options: StaticMaps.StaticMapsOptions = {
 	width: 1024,
@@ -58,5 +61,5 @@ export async function createStaticMap(
 	map.addMarker({ ...markerOptions, coord: marker } as StaticMaps.AddMarkerOptions);
 	await map.render(localCoords, zoom);
 	await map.image.save(outFile);
-	console.log(`Map saved to ${outFile}`);
+	logger.debug(`Map saved to ${outFile}`);
 }

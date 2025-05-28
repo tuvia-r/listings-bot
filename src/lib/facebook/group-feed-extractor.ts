@@ -1,5 +1,13 @@
-import { writeFileSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import { compact, get } from "lodash-es";
+import { getLogger } from "../../utils/logger";
+import { ATTACHMENTS_DIR } from "../../utils/consts";
+
+if(!existsSync(ATTACHMENTS_DIR)) {
+	mkdirSync(ATTACHMENTS_DIR, { recursive: true });
+}
+
+const logger = getLogger('group-feed-extractor');
 
 export interface  GroupFeedPostAttachment {
 	type: "photo" | "video" | "link";
@@ -10,26 +18,26 @@ export interface  GroupFeedPostAttachment {
 
 export interface GroupFeedPost {
 	postId: string;
-	groupId?: string;
-	groupName?: string;
+	groupId: string | null;
+	groupName: string | null;
 	text: string;
-	allAttechments: GroupFeedPostAttachment[];
+	postAttachments: GroupFeedPostAttachment[];
+	postUrl: string | null;
+	publisherName: string | null;
+	publisherUrl: string | null;
+	publisherId: string | null;
+	commentCount: number | null;
+	childrenIds: string[] | null;
+	children: GroupFeedPost[];
 	creationTime?: number;
-	postUrl?: string;
-	publisherName?: string;
-	publisherUrl?: string;
-	publisherId?: string;
 	reactionCount?: number;
-	commentCount?: number;
-	childrenIds?: string[];
-	children?: GroupFeedPost[];
 }
 
 export async function extractGroupFeedPost(
 	post: any
 ): Promise<GroupFeedPost[]> {
 	const type: string = post.label || get(post, "data.node.__typename") || "";
-	console.log(`Extracting group feed post of type: ${type}`);
+	logger.debug(`Extracting group feed post of type: ${type}`);
 	let posts: GroupFeedPost[] = [];
 	if (type === "Group") {
 		posts = await extractFromFeedInitial(post);
@@ -40,24 +48,13 @@ export async function extractGroupFeedPost(
 	const byId = new Map<string, GroupFeedPost>();
 	for (const post of posts) {
 		if (byId.has(post.postId)) {
-			console.warn(`Duplicate post found with ID: ${post.postId}, skipping...`);
+			logger.warn(`Duplicate post found with ID: ${post.postId}, skipping...`);
 			continue;
 		}
 		byId.set(post.postId, post);
 	}
 
-	if( posts.length > 0) {
-		console.log(`Extracted ${posts.length} posts`);
-		writeFileSync(
-			`./.logs/post-origin-${posts[0].postId}.json`,
-			JSON.stringify(post, null, 2)
-		);
-		writeFileSync(
-			`./.logs/extracted-posts-${posts[0].postId}.json`,
-			JSON.stringify(Array.from(byId.values()), null, 2)
-		);
-	}
-	console.log(`Unknown post type: ${type}`);
+	logger.debug(`Unknown post type: ${type}`);
 	return Array.from(byId.values());
 }
 
@@ -169,24 +166,23 @@ async function extractFromNode(node: any): Promise<GroupFeedPost> {
 		const attachedPost = await extractFromNode(attachedStory);
 
 		if (attachedPost) {
-			console.log({ attachedPost });
 			children.push(attachedPost);
 		}
 	}
 
 	return {
-			groupId,
+			groupId: groupId ?? null,
+			groupName: groupName || null,
 			postId,
-			groupName,
 			text,
-			allAttechments: compact(allAttechments.map(extractAttachment)),
+			postAttachments: compact(allAttechments.map(extractAttachment)),
 			creationTime: creationTime ? creationTime * 1000 : undefined,
-			postUrl,
-			publisherName,
-			publisherUrl,
-			publisherId,
-			reactionCount,
-			commentCount,
+			postUrl: postUrl || null,
+			publisherName: publisherName || null,
+			publisherUrl: publisherUrl || null,
+			publisherId: publisherId || null,
+			reactionCount: reactionCount || null,
+			commentCount: commentCount || null,
 			childrenIds: children.map((child) => child.postId),
 			children
 	};
@@ -196,14 +192,14 @@ async function extractFromNode(node: any): Promise<GroupFeedPost> {
 function extractAttachment(attachment: any) {
 	const type = get(attachment, "media.__typename", "");
 	const id = get(attachment, "media.id");
-	const localPath = `./.attachments/${id}`;
+	const localPath = `${ATTACHMENTS_DIR}/${id}`;
 
-	console.log(
+	logger.debug(
 		`Extracting attachment of type: ${type}, id: ${id}, localPath: ${localPath}`
 	);
 
 	if (!id || !type) {
-		console.warn("Invalid attachment, missing id or type", attachment);
+		logger.warn("Invalid attachment, missing id or type", attachment);
 		return null;
 	}
 

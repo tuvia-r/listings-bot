@@ -3,11 +3,21 @@ import { and, eq } from "drizzle-orm";
 import {
 	postsTable,
 	CombinedPost,
-	dbRecordToPost,
 	postToDbRecord,
 	PostProcessingStatus,
 	PostToPostTable,
 } from "./schemas/posts";
+import { ListingType, PropertyType, RentalType } from "../llm/extract-post-details";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger("posts-db");
+
+const FILTERS = [
+	eq(postsTable.propertyType, PropertyType.House), // Only get house posts
+	eq(postsTable.listingType, ListingType.Rental), // Only get rental listings
+	eq(postsTable.rentalType, RentalType.LongTerm), // Only get long-term rentals
+	eq(postsTable.isMarkedAsIrelevant, false) // Only get posts that are pending processing
+]
 
 /**
  * Get a post by its Facebook postId
@@ -28,7 +38,7 @@ export async function getPostById(postId: string) {
 		},
 		where: eq(postsTable.postId, postId),
 	});
-	return dbRecordToPost(post!);
+	return post;
 }
 
 /**
@@ -61,9 +71,9 @@ export async function setPost(post: CombinedPost): Promise<void> {
 			}
 		}
 
-		console.log(`Post ${post.postId} successfully saved to database`);
+		logger.info(`Post ${post.postId} successfully saved to database`);
 	} catch (error) {
-		console.error("Error setting post:", error, post);
+		logger.error("Error setting post:", error, post);
 		throw error;
 	}
 }
@@ -79,7 +89,7 @@ export async function deletePost(postId: string): Promise<boolean> {
 
 		return result.changes > 0;
 	} catch (error) {
-		console.error("Error deleting post:", error);
+		logger.error("Error deleting post:", error);
 		throw error;
 	}
 }
@@ -91,16 +101,14 @@ export async function getUnprocessedPosts() {
 	try {
 		const unprocessedPosts = await client.query.postsTable.findMany({
 			where: and(
-				eq(postsTable.processingStatus, PostProcessingStatus.Pending),
-				eq(postsTable.isHouseRentalListing, 1),
-				eq(postsTable.isHouse, 1) // Only get parent posts
+				eq(postsTable.processingStatus, PostProcessingStatus.Pending), 
+				...FILTERS // Apply filters for property type, listing type, and rental type
 			),
 			with: {
 				childPosts: {
-					//@ts-ignore
 					with: {
 						childPost: true,
-					},
+					}
 				},
 				parentPosts: {
 					with: {
@@ -110,19 +118,10 @@ export async function getUnprocessedPosts() {
 			},
 		});
 		return unprocessedPosts
-			.map(dbRecordToPost)
-			.filter((post) => !post?.parentPosts?.length)
-			.filter(
-				(post) =>
-					!post?.childPosts?.length ||
-					post?.childPosts?.every(
-						(child: any) =>
-							child.processingStatus ===
-							PostProcessingStatus.Pending
-					)
-			);
+			.filter((post) => !post?.parentPosts?.length) // Only return top-level posts
+			.filter(post => (!post.childPosts || post.childPosts.every(child => child.childPost.processingStatus === PostProcessingStatus.Pending)))
 	} catch (error) {
-		console.error("Error getting unprocessed posts:", error);
+		logger.error("Error getting unprocessed posts:", error);
 		throw error;
 	}
 }
@@ -140,9 +139,9 @@ export async function markPostAsProcessed(postId: string): Promise<void> {
 			})
 			.where(eq(postsTable.postId, postId));
 
-		console.log(`Post ${postId} marked as processed`);
+		logger.info(`Post ${postId} marked as processed`);
 	} catch (error) {
-		console.error("Error marking post as processed:", error);
+		logger.error("Error marking post as processed:", error);
 		throw error;
 	}
 }

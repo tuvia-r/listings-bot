@@ -1,6 +1,7 @@
+import { TELEGRAM_GROUP_ID } from "../../utils/consts";
 import { sendTextMessage } from "./bot";
 
-const chatId = process.env.TELEGRAM_GROUP_ID as string;
+const chatId = TELEGRAM_GROUP_ID;
 
 
 export async function logStart() {

@@ -1,6 +1,6 @@
-import { sql, sum } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
-import { ExtractedPostDetails } from '../../llm/extract-post-details';
+import { ExtractedPostDetails, ListingType, PropertyType, RentalType } from '../../llm/extract-post-details';
 import { GroupFeedPost, GroupFeedPostAttachment } from '../../facebook/group-feed-extractor';
 import { relations } from 'drizzle-orm';
 
@@ -8,12 +8,6 @@ import { relations } from 'drizzle-orm';
  * Combined type for posts including raw Facebook data and extracted details
  */
 export type CombinedPost = GroupFeedPost & Partial<ExtractedPostDetails>;
-export type CombinedPostFromDb = CombinedPost & {
-  createdAt: number;
-  updatedAt: number;
-  childPosts?: CombinedPost[];
-  parentPosts?: CombinedPost[];
-};
 
 
 export enum PostProcessingStatus {
@@ -29,46 +23,48 @@ export enum PostProcessingStatus {
 export const postsTable = sqliteTable('posts', {
   id: text('id').primaryKey(),
   postId: text('post_id').notNull().unique(),
-  groupId: text('group_id'),
+  groupId: text('group_id', {}),
   groupName: text('group_name'),
-  postText: text('post_text').notNull(),
-  postUrl: text('post_url').$type<string>(),
-  postAttachments: text('post_attachments').$type<GroupFeedPostAttachment[]>().$default(() => sql`[]`),
-  sharedPost: text('shared_post').$type<CombinedPost | null>().$default(() => null),
-  phoneNumbers: text('phone_numbers').$type<string[]>().$default(() => sql`[]`),
+  text: text('post_text').notNull(),
+  postUrl: text('post_url'),
+  postAttachments: text('post_attachments', {mode: 'json'}).$type<GroupFeedPostAttachment[]>().$default(() => sql`[]`),
+  phoneNumbers: text('phone_numbers', {mode: 'json'}).$type<{ number: string; forWhatsApp: boolean; forPhoneCall: boolean; name?: string; }[]>().$default(() => sql`[]`),
   createdAt: real('created_at').notNull().default(sql`(strftime('%s', 'now'))`),
   updatedAt: real('updated_at').notNull().default(sql`(strftime('%s', 'now'))`),
-  processingStatus: text('processing_status').notNull().$type<PostProcessingStatus>().default(PostProcessingStatus.Pending),
-  creationTime: real('creation_time').notNull().default(sql`(strftime('%s', 'now'))`),
-  isHouseRentalListing: integer('is_house_rental_listing').notNull().default(0),
+  creationTime: real('post_creation_time').notNull().default(sql`(strftime('%s', 'now'))`),
+  processingStatus: text('processing_status', {enum: Object.values(PostProcessingStatus) as [PostProcessingStatus, ...PostProcessingStatus[]]}).notNull().default(PostProcessingStatus.Pending),
+  propertyType: text('property_type', {enum: Object.values(PropertyType) as [PropertyType, ...PropertyType[]]}),
+  listingType: text('listing_type', {enum: Object.values(ListingType) as [ListingType, ...ListingType[]]}),
+  rentalType: text('rental_type', {enum: Object.values(RentalType) as [RentalType, ...RentalType[]]}),
   location: text('location').notNull().default(''),
-  price: real('price').$type<number | null>().default(null),
-  isHouse: integer('is_house').notNull().default(0),
-  sizeInM2: real('size_in_m2').$type<number | null>().default(null),
-  numberOfFloors: integer('number_of_floors').$type<number | null>().default(null),
-  numberOfRooms: integer('number_of_rooms').$type<number | null>().default(null),
-  numberOfBedrooms: integer('number_of_bedrooms').$type<number | null>().default(null),
-  isForLongTerm: integer('is_for_long_term').notNull().default(0),
-  hasParking: integer('has_parking').notNull().default(0),
-  hasGarden: integer('has_garden').notNull().default(0),
-  isFullFurnished: integer('is_full_furnished').notNull().default(0),
-  isPartiallyFurnished: integer('is_partially_furnished').notNull().default(0),
-  doesPriceIncludeElectricity: integer('does_price_include_electricity').notNull().default(0),
-  doesPriceIncludeWater: integer('does_price_include_water').notNull().default(0),
-  doesPriceIncludeLocalTaxes: integer('does_price_include_local_taxes').notNull().default(0),
-  availableFrom: text('available_from').$type<string | null>().default(null),
-  showingDate: text('showing_date').$type<string | null>().default(null),
-  showingTime: text('showing_time').$type<string | null>().default(null),
-  isNewConstruction: integer('is_new_construction').notNull().default(0),
-  isRenovated: integer('is_renovated').notNull().default(0),
-  isByBrokerOrAgent: integer('is_by_broker_or_agent').notNull().default(0),
-  postSummaryInHebrow: text('summary_in_hebrew').notNull().default(''),
-  postDescriptionInHebrew: text('post_description_in_hebrew').notNull().default(''),
-  postLocationInHebrew: text('post_location_in_hebrew').$type<string | null>().default(null),
-  listingSizeInHebrow: text('listing_size_in_hebrew').$type<string | null>().default(null),
-  postPriceInHebrew: text('post_price_in_hebrew').$type<string | null>().default(null),
-  postExtraDetailsInHebrew: text('post_extra_details_in_hebrew').$type<string | null>().default(null),
-  postContactInfoInHebrew: text('post_contact_info_in_hebrew').$type<string | null>().default(null),
+  price: real('price'),
+  sizeInM2: real('size_in_m2'),
+  numberOfFloors: integer('number_of_floors'),
+  numberOfRooms: integer('number_of_rooms'),
+  numberOfBedrooms: integer('number_of_bedrooms'),
+  hasParking: integer('has_parking', {mode: 'boolean'}),
+  hasGarden: integer('has_garden', {mode: 'boolean'}),
+  isFullFurnished: integer('is_full_furnished', {mode: 'boolean'}),
+  isPartiallyFurnished: integer('is_partially_furnished', {mode: 'boolean'}),
+  doesPriceIncludeElectricity: integer('does_price_include_electricity', {mode: 'boolean'}),
+  doesPriceIncludeWater: integer('does_price_include_water', {mode: 'boolean'}),
+  doesPriceIncludeLocalTaxes: integer('does_price_include_local_taxes', {mode: 'boolean'}),
+  availableFrom: text('available_from'),
+  showingDate: text('showing_date'),
+  showingTime: text('showing_time'),
+  isByBrokerOrAgent: integer('is_by_broker_or_agent', {mode: 'boolean'}),
+  postSummary: text('summary').notNull().default(''),
+  postDescription: text('post_description').notNull().default(''),
+  postLocation: text('post_location'),
+  listingSize: text('listing_size'),
+  postPrice: text('post_price'),
+  postExtraDetails: text('post_extra_details'),
+  postContactInfo: text('post_contact_info'),
+  publisherName: text('publisher_name'),
+  publisherUrl: text('publisher_url'),
+  publisherId: text('publisher_id'),
+  reactionCount: integer('reaction_count').default(0),
+  isMarkedAsIrelevant: integer('is_marked_as_irelevant', {mode: 'boolean'})
 });
 
 export const PostToPostTable = sqliteTable('post_to_post', {
@@ -100,130 +96,15 @@ export const PostToPostRelations = relations(PostToPostTable, ({ one }) => ({
   }),
 }));
 
+export type PostWithRelations = typeof postsTable.$inferSelect & {
+  childPosts?: (typeof PostToPostTable.$inferSelect & {
+    childPost: typeof postsTable.$inferSelect;
+  })[];
+  parentPosts?: (typeof PostToPostTable.$inferSelect & {
+    parentPost: typeof postsTable.$inferSelect;
+  })[];
+};
 
-function combinedPostToDb(post: CombinedPost): Record<string, any> {
-  const dbRecord: Record<string, any> = {
-    id: post.postId, // Ensure id is a number
-    postId: post.postId,
-    groupId: post.groupId,
-    groupName: post.groupName || '',
-    postText: post.text,
-    postUrl: post.postUrl,
-    postAttachments: JSON.stringify(post.allAttechments || '[]'),
-    phoneNumbers: JSON.stringify(post.phoneNumbers || '[]'),
-    creationTime: post.creationTime,
-    postSummaryInHebrow: post.postSummaryInHebrow || '',
-    postDescriptionInHebrew: post.postDescriptionInHebrew || '',
-    postLocationInHebrew: post.postLocationInHebrew || null,
-    listingSizeInHebrow: post.listingSizeInHebrow || null,
-    postPriceInHebrew: post.postPriceInHebrew || null,
-    postExtraDetailsInHebrew: post.postExtraDetailsInHebrew || null,
-    postContactInfoInHebrew: post.postContactInfoInHebrew || null,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  };
-
-  // Map extracted details to database fields
-  if (post.isHouseRentalListing !== undefined) dbRecord.isHouseRentalListing = post.isHouseRentalListing ? 1 : 0;
-  if (post.location) dbRecord.location = post.location;
-  if (post.price !== undefined) dbRecord.price = post.price;
-  if (post.isHouse !== undefined) dbRecord.isHouse = post.isHouse ? 1 : 0;
-  if (post.sizeInM2 !== undefined) dbRecord.sizeInM2 = post.sizeInM2;
-  if (post.numberOfFloors !== undefined) dbRecord.numberOfFloors = post.numberOfFloors;
-  if (post.numberOfRooms !== undefined) dbRecord.numberOfRooms = post.numberOfRooms;
-  if (post.numberOfBedrooms !== undefined) dbRecord.numberOfBedrooms = post.numberOfBedrooms;
-  if (post.isForLongTerm !== undefined) dbRecord.isForLongTerm = post.isForLongTerm ? 1 : 0;
-  if (post.hasParking !== undefined) dbRecord.hasParking = post.hasParking ? 1 : 0;
-  if (post.hasGarden !== undefined) dbRecord.hasGarden = post.hasGarden ? 1 : 0;
-  if (post.isFullFurnished !== undefined) dbRecord.isFullFurnished = post.isFullFurnished ? 1 : 0;
-  if (post.isPartiallyFurnished !== undefined) dbRecord.isPartiallyFurnished = post.isPartiallyFurnished ? 1 : 0;
-  if (post.doesPriceIncludeElectricity !== undefined) dbRecord.doesPriceIncludeElectricity = post.doesPriceIncludeElectricity ? 1 : 0;
-  if (post.doesPriceIncludeWater !== undefined)
-    dbRecord.doesPriceIncludeWater = post.doesPriceIncludeWater ? 1 : 0;
-  if (post.doesPriceIncludeLocalTaxes !== undefined)
-    dbRecord.doesPriceIncludeLocalTaxes = post.doesPriceIncludeLocalTaxes ? 1 : 0;
-  if (post.availableFrom) dbRecord.availableFrom = post.availableFrom;
-  if (post.showingDate) dbRecord.showingDate = post.showingDate;
-  if (post.showingTime) dbRecord.showingTime = post.showingTime;
-  if (post.isNewConstruction !== undefined) dbRecord.isNewConstruction = post.isNewConstruction ? 1 : 0;
-  if (post.isRenovated !== undefined) dbRecord.isRenovated = post.isRenovated ? 1 : 0;
-  if (post.isByBrokerOrAgent !== undefined) dbRecord.isByBrokerOrAgent = post.isByBrokerOrAgent ? 1 : 0;
-  return dbRecord;
-}
-
-export function postToDbRecord(post: CombinedPost): Record<string, any> {
-  const dbRecord = combinedPostToDb(post);
-  // Remove undefined values
-  return Object.fromEntries(Object.entries(dbRecord).filter(([_, value]) => value !== undefined));
-}
-
-
-export function dbRecordToPost(dbRecord: Record<string, any>): CombinedPostFromDb | undefined {
-  if(!dbRecord) {
-    return 
-  }
-  const post = {
-    id:  dbRecord.id,
-    postId: dbRecord.postId,
-    groupId: dbRecord.groupId,
-    groupName: dbRecord.groupName || '',
-    postUrl: dbRecord.postUrl,
-    text: dbRecord.postText,
-    allAttechments: JSON.parse(dbRecord.postAttachments) || [],
-    phoneNumbers: JSON.parse(dbRecord.phoneNumbers) || [],
-    creationTime: dbRecord.creationTime,
-    createdAt: dbRecord.createdAt,
-    updatedAt: dbRecord.updatedAt,
-    postSummaryInHebrow: dbRecord.postSummaryInHebrow || '',
-    postDescriptionInHebrew: dbRecord.postDescriptionInHebrew || '',
-    postLocationInHebrew: dbRecord.postLocationInHebrew || null,
-    listingSizeInHebrow: dbRecord.listingSizeInHebrow || null,
-    postPriceInHebrew: dbRecord.postPriceInHebrew || null,
-    postExtraDetailsInHebrew: dbRecord.postExtraDetailsInHebrew || null,
-    postContactInfoInHebrew: dbRecord.postContactInfoInHebrew || null,
-    
-  } as CombinedPost & {
-    createdAt: number;
-    updatedAt: number;
-    childPosts?: CombinedPost[];
-    parentPosts?: CombinedPost[];
-  };
-
-  // Map extracted details from database fields
-  post.isHouseRentalListing = Boolean(dbRecord.isHouseRentalListing);
-  post.location = dbRecord.location || '';
-  post.price = dbRecord.price !== null ? dbRecord.price : undefined;
-  post.isHouse = Boolean(dbRecord.isHouse);
-  post.sizeInM2 = dbRecord.sizeInM2 !== null ? dbRecord.sizeInM2 : undefined;
-  post.numberOfFloors = dbRecord.numberOfFloors !== null ? dbRecord.numberOfFloors : undefined;
-  post.numberOfRooms = dbRecord.numberOfRooms !== null ? dbRecord.numberOfRooms : undefined;
-  post.numberOfBedrooms = dbRecord.numberOfBedrooms !== null ? dbRecord.numberOfBedrooms : undefined;
-  post.isForLongTerm = Boolean(dbRecord.isForLongTerm);
-  post.hasParking = Boolean(dbRecord.hasParking);
-  post.hasGarden = Boolean(dbRecord.hasGarden);
-  post.isFullFurnished = Boolean(dbRecord.isFullFurnished);
-  post.isPartiallyFurnished = Boolean(dbRecord.isPartiallyFurnished);
-  post.doesPriceIncludeElectricity = Boolean(dbRecord.doesPriceIncludeElectricity);
-  post.doesPriceIncludeWater = Boolean(dbRecord.doesPriceIncludeWater);
-  post.doesPriceIncludeLocalTaxes = Boolean(dbRecord.doesPriceIncludeLocalTaxes);
-  post.availableFrom = dbRecord.availableFrom || null;
-  post.showingDate = dbRecord.showingDate || null;
-  post.showingTime = dbRecord.showingTime || null;
-  post.isNewConstruction = Boolean(dbRecord.isNewConstruction);
-  post.isRenovated = Boolean(dbRecord.isRenovated);
-  post.isByBrokerOrAgent = Boolean(dbRecord.isByBrokerOrAgent);
-
-  if (dbRecord.childPosts) {
-    post.childPosts = dbRecord.childPosts.map((c: any) => dbRecordToPost(c.childPost));
-  } else {
-    post.childPosts = [];
-  }
-  if (dbRecord.parentPosts) {
-    post.parentPosts = dbRecord.parentPosts.map((c: any) => dbRecordToPost(c.parentPost));
-  } else {
-    post.parentPosts = [];
-  }
-
-  console.log(post);
-  return post;
+export function postToDbRecord(post: CombinedPost): typeof postsTable.$inferInsert {
+  return {...post, id: post.postId}
 }

@@ -1,42 +1,69 @@
-import { scheduler } from 'timers/promises';
-import { migrateDb } from './lib/db/client'
-import { fetchPostsOperation } from './operations/fetch-posts-operation';
-import { updateChannelWithNewPosts } from './operations/update-channel-operation';
-import { getBrowser } from './lib/browser/puppeteer';
+import { scheduler } from "timers/promises";
+import { migrateDb } from "./lib/db/client";
+import { fetchPostsOperation } from "./operations/fetch-posts-operation";
+import { updateChannelWithNewPosts } from "./operations/update-channel-operation";
+import { getBrowser } from "./lib/browser/puppeteer";
+import { readFile } from "fs/promises";
+import { getLogger } from "./utils/logger";
+import pMap from "p-map";
+import { EXTRACTOR_MAX_GROUP_SCROLL_TIME, EXTRACTOR_CONCURRENCY } from "./utils/consts";
 
+const logger = getLogger("main");
 
-export async function main ()  {
-    await migrateDb();
+export async function main() {
+	await migrateDb();
 
-    const groupIds = process.env.FACEBOOK_GROUP_IDS?.split(',') || [];
-    const scrapingPromises = [];
-    const browserInstance = await getBrowser();
-    for (const groupId of groupIds) {
-        scrapingPromises.push(fetchPostsOperation(groupId.trim(), browserInstance));
-        await scheduler.wait(20 + (1000 * (Math.random() * 10))); // Random delay between 0 and 10 seconds
-    }
+	const groupIds = JSON.parse(
+		await readFile("./config/groups.json", "utf-8")
+	) as string[];
 
-    try {
-        await Promise.race([
-            await Promise.all(scrapingPromises),
-            scheduler.wait(60000 * 10) // Timeout after 10 minutes
-        ]);
-    }
-    catch (error) {
-        console.error('Error during scraping operations:', error);
-    }
+	const browserInstance = await getBrowser();
 
-    console.log('All scraping operations completed. Closing browser...');
-    browserInstance.close().catch(error => console.error('Error closing browser:', error));
+	try {
+		await pMap(
+			groupIds,
+			async (groupId) => {
+				logger.info(
+					`Starting scraping for group ID: ${groupId.trim()}`
+				);
+				try {
+					await Promise.race([
+						fetchPostsOperation(groupId.trim(), browserInstance),
+						scheduler.wait(EXTRACTOR_MAX_GROUP_SCROLL_TIME)
+					]);
+					logger.info(
+						`Completed scraping for group ID: ${groupId.trim()}`
+					);
+				} catch (error) {
+					logger.error(
+						`Error scraping group ID ${groupId.trim()}:`,
+						error
+					);
+				}
+			},
+			{
+				concurrency: EXTRACTOR_CONCURRENCY,
+				stopOnError: false,
+			}
+		);
+	} catch (error) {
+		logger.error("Error during scraping operations:", error);
+		// Ensure browser is closed even if an error occurs
+	}
 
-    console.log('Processing posts, and updating channel...');
-    await updateChannelWithNewPosts();
-    console.log('Finished processing posts.');
+	logger.info("All scraping operations completed. Closing browser...");
+	browserInstance
+		.close()
+		.catch((error) => logger.error("Error closing browser:", error));
 
-    console.log('Group IDs processed:', groupIds);
+	logger.info("Processing posts, and updating channel...");
+	await updateChannelWithNewPosts();
+	logger.info("Finished processing posts.");
 
-    process.exit(0);
-};
+	logger.info("Group IDs processed:", groupIds);
 
-migrateDb()
-main().catch(error => console.error('Error in main execution:', error));
+	process.exit(0);
+}
+
+migrateDb();
+main().catch((error) => logger.error("Error in main execution:", error));

@@ -1,14 +1,17 @@
 import { sendPostToTelegram } from "../lib/telegram/send-post";
 import { getUnprocessedPosts, markPostAsProcessed } from "../lib/db/posts";
+import { getLogger } from "../utils/logger";
+
+const logger = getLogger("update-channel-operation");
 
 export async function updateChannelWithNewPosts() {
 	try {
-		console.log("Fetching unprocessed listings from database...");
+		logger.info("Fetching unprocessed listings from database...");
 
 		// Get all posts where processedAt is null
 		const unprocessedPosts = await getUnprocessedPosts();
 
-		console.log(`Found ${unprocessedPosts.length} unprocessed listings`);
+		logger.info(`Found ${unprocessedPosts.length} unprocessed listings`);
 
 		if (unprocessedPosts.length === 0) {
 			return 0;
@@ -20,10 +23,10 @@ export async function updateChannelWithNewPosts() {
 		for (const post of unprocessedPosts) {
 			try {
 				if (!post || !post.postId) {
-					console.warn("Skipping invalid post:", post);
+					logger.warn("Skipping invalid post:", post);
 					continue;
 				}
-				console.log(`Sending post ${post.postId} to Telegram...`, post);
+				logger.log(`Sending post ${post.postId} to Telegram...`, post);
 
 				// Send to Telegram
 				const success = await sendPostToTelegram(post);
@@ -33,12 +36,12 @@ export async function updateChannelWithNewPosts() {
 					await markPostAsProcessed(post.postId);
 
 					await Promise.all(
-						post.childrenIds?.map((childId) =>
-							markPostAsProcessed(childId)
+						post.childPosts.map((child) =>
+							markPostAsProcessed(child.childPostId)
 						) || []
 					);
 
-					console.log(
+					logger.info(
 						`Post ${post.postId} successfully processed and sent to Telegram`
 					);
 					processedCount++;
@@ -48,22 +51,22 @@ export async function updateChannelWithNewPosts() {
 						setTimeout(resolve, 1000 * 60)
 					); // 60 seconds
 				} else {
-					console.error(
+					logger.error(
 						`Failed to send post ${post.postId} to Telegram`
 					);
 				}
 			} catch (error) {
-				console.error("Error processing post:", error);
+				logger.error("Error processing post:", error);
 				// Continue with the next post even if this one fails
 			}
 		}
 
-		console.log(
+		logger.info(
 			`Successfully processed ${processedCount} out of ${unprocessedPosts.length} posts`
 		);
 		return processedCount;
 	} catch (error) {
-		console.error("Error processing unprocessed listings:", error);
+		logger.error("Error processing unprocessed listings:", error);
 		throw error;
 	}
 }

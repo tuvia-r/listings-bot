@@ -1,4 +1,7 @@
 import { PlacesClient } from "@googlemaps/places";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger("maps-coords");
 
 const placesClient = new PlacesClient({
 	apiKey: process.env.GOOGLE_MAPS_API_KEY!,
@@ -26,7 +29,7 @@ export async function searchCoords(query: string) {
 			  ] as [number, number])
 			: undefined;
 	} catch (error) {
-		console.error("Error searching for places:", error);
+		logger.error("Error searching for places:", error);
 		throw error;
 	}
 }

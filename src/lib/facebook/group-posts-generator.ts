@@ -2,6 +2,9 @@ import { interceptGraphQlResponses } from "./intrecept-graphql";
 import { scheduler } from "timers/promises";
 import { extractGroupFeedPost, GroupFeedPost } from "./group-feed-extractor";
 import { Browser } from "rebrowser-puppeteer";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger('group-posts-generator');
 
 export async function* groupPosts(groupId: string, browserInstance: Browser) {
     const page = await browserInstance.newPage();
@@ -17,24 +20,24 @@ export async function* groupPosts(groupId: string, browserInstance: Browser) {
     // Intercept GraphQL responses to extract post data
     await interceptGraphQlResponses(page, async (event) => {
         const { responseBody } = event;
-        console.log(`GraphQL response detected at: ${event.request.url()}`);
+        logger.debug(`GraphQL response detected at: ${event.request.url()}`);
         if (Array.isArray(responseBody)) {
             for (const item of responseBody) {
                 if (!item) continue;
                 if (allPosts.length >= maxPosts) {
-                    console.log('Max posts limit reached, stopping extraction...');
+                    logger.info('Max posts limit reached, stopping extraction...');
                     break;
                 }
 
                 const extractedPosts = await extractGroupFeedPost(item);
                 for (const post of extractedPosts) {
                     if (processedPostIds.has(post.postId)) {
-                        console.log(`Post with ID ${post.postId} already processed, skipping...`);
+                        logger.info(`Post with ID ${post.postId} already processed, skipping...`);
                         continue; // Skip already processed posts
                     }
                     processedPostIds.add(post.postId); // Mark this post as processed
                     allPosts.push(post);
-                    console.log(`Post with ID ${post.postId} extracted and added to allPosts.`);
+                    logger.debug(`Post with ID ${post.postId} extracted and added to allPosts.`);
                 }
             }
         }
@@ -53,7 +56,7 @@ export async function* groupPosts(groupId: string, browserInstance: Browser) {
         await scheduler.wait(1000 * (Math.random() * 10));
     }
 
-    console.log('Page loaded, waiting for initial content...');
+    logger.info('Page loaded, waiting for initial content...');
     await scroll();
 
     let yieldPointer = 0;
@@ -64,12 +67,12 @@ export async function* groupPosts(groupId: string, browserInstance: Browser) {
 
         // Check if new posts have been loaded
         const newPosts = allPosts.slice(yieldPointer);
-        console.log(`New posts found: ${newPosts.length}`);
+        logger.debug(`New posts found: ${newPosts.length}`);
         if (newPosts.length > 0) {
             yield* newPosts;
             yieldPointer += newPosts.length;
         } else {
-            console.log('No new posts found, shutting down...');
+            logger.debug('No new posts found');
             emptyAttemptsCount++;
         }
     }

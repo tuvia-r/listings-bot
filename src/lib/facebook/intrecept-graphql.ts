@@ -1,4 +1,7 @@
 import { HTTPRequest, HTTPResponse, Page } from "rebrowser-puppeteer";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger('facebook-intercept-graphql');
 
 
 export type InterseptionEvent = {
@@ -12,7 +15,7 @@ export type InterceptionCallback = (event: InterseptionEvent) => void | Promise<
 
 async function handleGraphQLRequest(request: HTTPRequest, response: HTTPResponse, callback: InterceptionCallback) {
     const responseBody = await response.text();
-    console.log(`GraphQL request detected at: ${request.url()}`);
+    logger.debug(`GraphQL request detected at: ${request.url()}`);
     
     // Parse each line of the response as a separate JSON object
     // Facebook often returns multiple JSON objects in a single response
@@ -22,7 +25,7 @@ async function handleGraphQLRequest(request: HTTPRequest, response: HTTPResponse
             try {
                 return JSON.parse(line);
             } catch (e) {
-                console.log('Failed to parse line:', line.substring(0, 100) + '...');
+                logger.log('Failed to parse line:', line.substring(0, 100) + '...');
                 return null;
             }
         })
@@ -30,7 +33,7 @@ async function handleGraphQLRequest(request: HTTPRequest, response: HTTPResponse
     
     // Log structured data for debugging
     if (parsedResponses.length > 0) {
-        console.log(`Successfully parsed ${parsedResponses.length} response objects from GraphQL response`);
+        logger.debug(`Successfully parsed ${parsedResponses.length} response objects from GraphQL response`);
     }
     
     await callback({
@@ -40,7 +43,7 @@ async function handleGraphQLRequest(request: HTTPRequest, response: HTTPResponse
         error: null,
     });
 
-    console.log('GraphQL response processing completed.');
+    logger.debug('GraphQL response processing completed.');
 }
 
 export async function interceptGraphQlResponses(page: Page, callback: InterceptionCallback) {
@@ -77,11 +80,11 @@ export async function interceptGraphQlResponses(page: Page, callback: Intercepti
                     responseBody.includes('feedback');
                 
                 if (containsRelevantData) {
-                    console.log('Found relevant GraphQL response with potential post data');
+                    logger.debug('Found relevant GraphQL response with potential post data');
                     await handleGraphQLRequest(interceptedRequest, interceptedResponse, callback);
                 }
             } catch (error) {
-                console.error('Error handling GraphQL response:', error);
+                logger.error('Error handling GraphQL response:', error);
             }
         }
     });

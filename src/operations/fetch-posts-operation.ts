@@ -9,43 +9,41 @@ import {
 import { downloadFile } from "../lib/fs/download-file";
 import { GroupFeedPost } from "../lib/facebook/group-feed-extractor";
 import { Browser } from "rebrowser-puppeteer";
+import ms from "ms";
+import { getLogger } from "../utils/logger";
+import { MAX_NEW_POSTS, MAX_POST_AGE, MAX_POSTS } from "../utils/consts";
+
+const logger = getLogger("fetch-posts-operation");
 
 async function savePost(
 	post: GroupFeedPost,
 	extractedDetails: ExtractedPostDetails
-): Promise<CombinedPost> {
+){
     const existingPost = await getPostById(post.postId);
-
-    if (existingPost) {
-        return existingPost; // If the post already exists, return it
-    }
+	if (existingPost) {
+		logger.info(`Post already exists in database: ${post.postId}`);
+		return; // Skip saving if the post already exists
+	}
 	const combinedPost: CombinedPost = {
 		...post,
 		...extractedDetails,
 	};
 
 	// Save attachments
-	for (const attachment of post.allAttechments) {
+	for (const attachment of post.postAttachments) {
 		await downloadFile(attachment.url, attachment.localPath);
 	}
 
 	// Save to database
 	await setPost(combinedPost);
-	console.log(`New post saved: ${post.postId}`);
-
-	return combinedPost;
+	logger.info(`New post saved: ${post.postId}`);
 }
 
-const MAX_NEW_POSTS = 15;
-const MAX_POSTS = 50; // Maximum number of posts to process
-
-const MAX_POST_AGE = 1000 * 60 * 60 * 24 * 60; // about 2 months
 export async function fetchPostsOperation(groupId: string, browserInstance: Browser) {
 	const posts = groupPosts(groupId, browserInstance);
 
 	let postCount = 0;
 	let newPostsCount = 0;
-	let existingPostsCount = 0;
 
 	for await (const post of posts) {
 		if (newPostsCount >= MAX_NEW_POSTS) break;
@@ -54,21 +52,21 @@ export async function fetchPostsOperation(groupId: string, browserInstance: Brow
 
 		try {
 			if (!post.text && !post.childrenIds) {
-				console.log(
+				logger.info(
 					`Skipping post ${post.postId} due to missing text and childrenIds`
 				);
 				continue;
 			}
             if(post.creationTime && post.creationTime < Date.now() - MAX_POST_AGE) {
-                console.log(`Skipping post ${post.postId} due to age: ${new Date(post.creationTime)}`);
+                logger.info(`Skipping post ${post.postId} due to age: ${new Date(post.creationTime)}`);
                 continue;
             }
-			console.log(`Processing post ${post.postId}...`);
+			logger.info(`Processing post ${post.postId}...`);
 			// Check if the post already exists in the database
 			const existingPost = await getPostById(post.postId);
 
 			if (existingPost) {
-				console.log(`Post already exists in database: ${post.postId}`);
+				logger.info(`Post already exists in database: ${post.postId}`);
 				continue;
 			}
 			// Post doesn't exist, extract details and save to database
@@ -79,24 +77,15 @@ export async function fetchPostsOperation(groupId: string, browserInstance: Brow
 			}
 			await savePost(post, postDetails);
 
-			if (!postDetails.isHouseRentalListing) {
-				// save for future reference, but do not send to Telegram
-				console.log(
-					`Post ${post.postId} is not a house rental listing, skipping...`,
-					postDetails,
-					post
-				);
-				continue;
-			}
 			newPostsCount++;
 		} catch (error) {
-			console.error(`Error processing post ${post.postId}:`, error);
+			logger.error(`Error processing post ${post.postId}:`, error);
 		}
 
 		await scheduler.wait(1000); // Wait for 1 second between posts to avoid rate limits
 	}
 
-	console.log(
-		`Processing complete: ${postCount} posts processed, ${newPostsCount} new posts saved, ${existingPostsCount} existing posts skipped.`
+	logger.info(
+		`Processing complete: ${postCount} posts processed, ${newPostsCount} new posts saved`
 	);
 }

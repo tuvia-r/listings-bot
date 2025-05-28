@@ -1,7 +1,9 @@
-import { mediumint } from "drizzle-orm/mysql-core";
 import { Bot, InputFile } from "grammy";
 import { InputMediaPhoto, InputMediaVideo } from "grammy/types";
 import pRetry from "p-retry";
+import { getLogger } from "../../utils/logger";
+
+const logger = getLogger("telegram-bot");
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN as string);
 
@@ -22,7 +24,7 @@ export async function sendTextMessage(
 			minTimeout: 1000 * 10,
 			maxTimeout: 1000 * 60, // 1 minute
 			onFailedAttempt: (error) => {
-				console.error(`Failed to send message: ${error.message}`);
+				logger.error(`Failed to send message: ${error.message}`);
 			},
 		}
 	);
@@ -65,13 +67,13 @@ export async function sendMessageWithAttachments(
 			maxTimeout: 1000 * 60, // 1 minute
 			onFailedAttempt: (error) => {
 				if (/message caption is too long/.test(error.stack ?? error.message)) {
-					console.warn(
+					logger.warn(
 						`Message too long, sending as text instead: ${error.message}`
 					);
                     text = text.split('<blockquote expandable>\n<b>:הפוסט המקורי</b>')[0].slice(0, 4096); // Telegram's max message length
 					// shouldSendTextAsDescription = true; // Fallback to text if media group fails
 				}
-				console.error(
+				logger.error(
 					`Failed to send message with attachments: ${error.message}`,
 					text
 				);
