@@ -4,10 +4,7 @@ import { getLogger } from "../../utils/logger";
 
 const logger = getLogger('browser-auth');
 
-const cookieFiles = [
-    './config/www.facebook.com_cookies.json',
-    'config/web.whatsapp.com_cookies.json'
-];
+const cookieFiles = process.env.COOCKIE_FILES?.split(',') || []
 
 export async function authenticate(browser: Browser) {
     for (const file of cookieFiles) {

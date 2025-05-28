@@ -45,13 +45,13 @@ async function runStart() {
 }
 
 // Schedule at 09:00, 12:00, 17:00, 22:00 every day
-const times = [
-	"0 9 * * *",
-	"0 12 * * *",
-	"0 17 * * *",
-	"0 22 * * *",
-	"0 0 * * *",
-]; // Added midnight for completeness
+const times = process.env.CRON_TIMES?.split(",").map((time) => time.trim()) || [];
+
+if (times.length === 0) {
+	logger.warn("No cron times specified. Using default times: 09:00, 12:00, 17:00, 22:00.");
+	times.push("0 9 * * *", "0 12 * * *", "0 17 * * *", "0 22 * * *");
+}
+
 times.forEach((time) => {
 	cron.schedule(time, runStart, {
 		timezone: "Asia/Jerusalem", // Set your desired timezone
