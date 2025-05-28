@@ -12,6 +12,6 @@ export async function getBrowser() {
             deviceScaleFactor: 2,
         },
     });
-    await authenticate(browser)
+    await authenticate(browser);
     return browser;
 }

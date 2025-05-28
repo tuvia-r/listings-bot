@@ -1,4 +1,4 @@
-import {GoogleGenAI} from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { EXTRACT_DETAILS_MODEL_ID } from '../../utils/consts';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -12,7 +12,7 @@ export function complete(prompt: string, system: string, schema: any) {
         config: {
             responseMimeType: 'application/json',
             systemInstruction: system,
-            responseSchema: schema
-        }
+            responseSchema: schema,
+        },
     });
 }

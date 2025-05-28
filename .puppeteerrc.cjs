@@ -5,8 +5,8 @@ const { join } = require('path');
 module.exports = {
     // Download Chrome (default `skipDownload: false`).
     chrome: {
-      skipDownload: false,
-      version: 'latest',
+        skipDownload: false,
+        version: 'latest',
     },
-    cacheDirectory: join(__dirname, '.cache', 'puppeteer')
-  };
+    cacheDirectory: join(__dirname, '.cache', 'puppeteer'),
+};

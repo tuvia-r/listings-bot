@@ -10,7 +10,7 @@ import { DB_FILE_NAME } from '../../utils/consts';
 const logger = getLogger('db-client');
 
 const dbDir = dirname(DB_FILE_NAME);
-if(!existsSync(dbDir)) {
+if (!existsSync(dbDir)) {
     mkdirSync(dbDir, { recursive: true });
 }
 
@@ -21,19 +21,18 @@ export const client = drizzle(db, {
         postsTable,
         PostToPostTable,
         PostRelations,
-        PostToPostRelations
-    }
+        PostToPostRelations,
+    },
 });
 
 export function migrateDb() {
     logger.debug('Starting database migration...');
     try {
         migrate(client, {
-            migrationsFolder: './drizzle'
+            migrationsFolder: './drizzle',
         });
         logger.debug('Database migration completed.');
-    }
-    catch (error) {
+    } catch (error) {
         logger.error('Database migration failed:', error);
         throw error; // Re-throw to handle it in the main execution
     }

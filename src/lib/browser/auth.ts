@@ -1,10 +1,10 @@
-import { readFile } from "fs/promises";
-import { Browser } from "rebrowser-puppeteer";
-import { getLogger } from "../../utils/logger";
+import { readFile } from 'fs/promises';
+import { Browser } from 'rebrowser-puppeteer';
+import { getLogger } from '../../utils/logger';
 
 const logger = getLogger('browser-auth');
 
-const cookieFiles = process.env.COOCKIE_FILES?.split(',') || []
+const cookieFiles = process.env.COOCKIE_FILES?.split(',') || [];
 
 export async function authenticate(browser: Browser) {
     for (const file of cookieFiles) {

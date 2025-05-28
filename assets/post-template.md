@@ -15,4 +15,5 @@ $content$
 <b>:הפוסט המקורי</b>
 
 $original$
+
 </blockquote>

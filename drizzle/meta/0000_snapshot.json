@@ -1,411 +1,398 @@
 {
-  "version": "6",
-  "dialect": "sqlite",
-  "id": "089c4c0b-0ee9-431b-8922-61b932ef636f",
-  "prevId": "00000000-0000-0000-0000-000000000000",
-  "tables": {
-    "post_to_post": {
-      "name": "post_to_post",
-      "columns": {
-        "parent_post_id": {
-          "name": "parent_post_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+    "version": "6",
+    "dialect": "sqlite",
+    "id": "089c4c0b-0ee9-431b-8922-61b932ef636f",
+    "prevId": "00000000-0000-0000-0000-000000000000",
+    "tables": {
+        "post_to_post": {
+            "name": "post_to_post",
+            "columns": {
+                "parent_post_id": {
+                    "name": "parent_post_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "child_post_id": {
+                    "name": "child_post_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {
+                "post_to_post_parent_post_id_posts_id_fk": {
+                    "name": "post_to_post_parent_post_id_posts_id_fk",
+                    "tableFrom": "post_to_post",
+                    "tableTo": "posts",
+                    "columnsFrom": ["parent_post_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                },
+                "post_to_post_child_post_id_posts_id_fk": {
+                    "name": "post_to_post_child_post_id_posts_id_fk",
+                    "tableFrom": "post_to_post",
+                    "tableTo": "posts",
+                    "columnsFrom": ["child_post_id"],
+                    "columnsTo": ["id"],
+                    "onDelete": "cascade",
+                    "onUpdate": "cascade"
+                }
+            },
+            "compositePrimaryKeys": {
+                "post_to_post_child_post_id_parent_post_id_pk": {
+                    "columns": ["child_post_id", "parent_post_id"],
+                    "name": "post_to_post_child_post_id_parent_post_id_pk"
+                }
+            },
+            "uniqueConstraints": {},
+            "checkConstraints": {}
         },
-        "child_post_id": {
-          "name": "child_post_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+        "posts": {
+            "name": "posts",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "post_id": {
+                    "name": "post_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "group_id": {
+                    "name": "group_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "group_name": {
+                    "name": "group_name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "post_text": {
+                    "name": "post_text",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false
+                },
+                "post_url": {
+                    "name": "post_url",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "post_attachments": {
+                    "name": "post_attachments",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "phone_numbers": {
+                    "name": "phone_numbers",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "created_at": {
+                    "name": "created_at",
+                    "type": "real",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(strftime('%s', 'now'))"
+                },
+                "updated_at": {
+                    "name": "updated_at",
+                    "type": "real",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(strftime('%s', 'now'))"
+                },
+                "post_creation_time": {
+                    "name": "post_creation_time",
+                    "type": "real",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "(strftime('%s', 'now'))"
+                },
+                "processing_status": {
+                    "name": "processing_status",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "'pending'"
+                },
+                "property_type": {
+                    "name": "property_type",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "listing_type": {
+                    "name": "listing_type",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "rental_type": {
+                    "name": "rental_type",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "location": {
+                    "name": "location",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "''"
+                },
+                "price": {
+                    "name": "price",
+                    "type": "real",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "size_in_m2": {
+                    "name": "size_in_m2",
+                    "type": "real",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "number_of_floors": {
+                    "name": "number_of_floors",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "number_of_rooms": {
+                    "name": "number_of_rooms",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "number_of_bedrooms": {
+                    "name": "number_of_bedrooms",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "has_parking": {
+                    "name": "has_parking",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "has_garden": {
+                    "name": "has_garden",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "is_full_furnished": {
+                    "name": "is_full_furnished",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "is_partially_furnished": {
+                    "name": "is_partially_furnished",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "does_price_include_electricity": {
+                    "name": "does_price_include_electricity",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "does_price_include_water": {
+                    "name": "does_price_include_water",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "does_price_include_local_taxes": {
+                    "name": "does_price_include_local_taxes",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "available_from": {
+                    "name": "available_from",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "showing_date": {
+                    "name": "showing_date",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "showing_time": {
+                    "name": "showing_time",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "is_by_broker_or_agent": {
+                    "name": "is_by_broker_or_agent",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "summary": {
+                    "name": "summary",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "''"
+                },
+                "post_description": {
+                    "name": "post_description",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "autoincrement": false,
+                    "default": "''"
+                },
+                "post_location": {
+                    "name": "post_location",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "listing_size": {
+                    "name": "listing_size",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "post_price": {
+                    "name": "post_price",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "post_extra_details": {
+                    "name": "post_extra_details",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "post_contact_info": {
+                    "name": "post_contact_info",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "publisher_name": {
+                    "name": "publisher_name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "publisher_url": {
+                    "name": "publisher_url",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "publisher_id": {
+                    "name": "publisher_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                },
+                "reaction_count": {
+                    "name": "reaction_count",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false,
+                    "default": 0
+                },
+                "is_marked_as_irelevant": {
+                    "name": "is_marked_as_irelevant",
+                    "type": "integer",
+                    "primaryKey": false,
+                    "notNull": false,
+                    "autoincrement": false
+                }
+            },
+            "indexes": {
+                "posts_post_id_unique": {
+                    "name": "posts_post_id_unique",
+                    "columns": ["post_id"],
+                    "isUnique": true
+                }
+            },
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "checkConstraints": {}
         }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "post_to_post_parent_post_id_posts_id_fk": {
-          "name": "post_to_post_parent_post_id_posts_id_fk",
-          "tableFrom": "post_to_post",
-          "tableTo": "posts",
-          "columnsFrom": [
-            "parent_post_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "post_to_post_child_post_id_posts_id_fk": {
-          "name": "post_to_post_child_post_id_posts_id_fk",
-          "tableFrom": "post_to_post",
-          "tableTo": "posts",
-          "columnsFrom": [
-            "child_post_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "post_to_post_child_post_id_parent_post_id_pk": {
-          "columns": [
-            "child_post_id",
-            "parent_post_id"
-          ],
-          "name": "post_to_post_child_post_id_parent_post_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
     },
-    "posts": {
-      "name": "posts",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "post_id": {
-          "name": "post_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "group_id": {
-          "name": "group_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "group_name": {
-          "name": "group_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "post_text": {
-          "name": "post_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "post_url": {
-          "name": "post_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "post_attachments": {
-          "name": "post_attachments",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "phone_numbers": {
-          "name": "phone_numbers",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
-        },
-        "post_creation_time": {
-          "name": "post_creation_time",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%s', 'now'))"
-        },
-        "processing_status": {
-          "name": "processing_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'pending'"
-        },
-        "property_type": {
-          "name": "property_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "listing_type": {
-          "name": "listing_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rental_type": {
-          "name": "rental_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "location": {
-          "name": "location",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
-        },
-        "price": {
-          "name": "price",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "size_in_m2": {
-          "name": "size_in_m2",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "number_of_floors": {
-          "name": "number_of_floors",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "number_of_rooms": {
-          "name": "number_of_rooms",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "number_of_bedrooms": {
-          "name": "number_of_bedrooms",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "has_parking": {
-          "name": "has_parking",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "has_garden": {
-          "name": "has_garden",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "is_full_furnished": {
-          "name": "is_full_furnished",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "is_partially_furnished": {
-          "name": "is_partially_furnished",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "does_price_include_electricity": {
-          "name": "does_price_include_electricity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "does_price_include_water": {
-          "name": "does_price_include_water",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "does_price_include_local_taxes": {
-          "name": "does_price_include_local_taxes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "available_from": {
-          "name": "available_from",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "showing_date": {
-          "name": "showing_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "showing_time": {
-          "name": "showing_time",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "is_by_broker_or_agent": {
-          "name": "is_by_broker_or_agent",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "summary": {
-          "name": "summary",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
-        },
-        "post_description": {
-          "name": "post_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
-        },
-        "post_location": {
-          "name": "post_location",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "listing_size": {
-          "name": "listing_size",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "post_price": {
-          "name": "post_price",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "post_extra_details": {
-          "name": "post_extra_details",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "post_contact_info": {
-          "name": "post_contact_info",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "publisher_name": {
-          "name": "publisher_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "publisher_url": {
-          "name": "publisher_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "publisher_id": {
-          "name": "publisher_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "reaction_count": {
-          "name": "reaction_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": 0
-        },
-        "is_marked_as_irelevant": {
-          "name": "is_marked_as_irelevant",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "posts_post_id_unique": {
-          "name": "posts_post_id_unique",
-          "columns": [
-            "post_id"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
+    "views": {},
+    "enums": {},
+    "_meta": {
+        "schemas": {},
+        "tables": {},
+        "columns": {}
+    },
+    "internal": {
+        "indexes": {}
     }
-  },
-  "views": {},
-  "enums": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "internal": {
-    "indexes": {}
-  }
 }

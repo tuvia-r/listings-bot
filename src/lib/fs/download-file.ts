@@ -1,8 +1,8 @@
-import { existsSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
-import { getLogger } from "../../utils/logger";
+import { existsSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import { getLogger } from '../../utils/logger';
 
-const logger = getLogger("download-file");
+const logger = getLogger('download-file');
 
 export async function downloadFile(url: string, filePath: string): Promise<void> {
     if (!url || !filePath) {

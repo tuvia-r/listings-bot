@@ -2,7 +2,7 @@
 
 ## Motivation
 
-Finding a rental apartment in Israel often means scrolling through hundreds of Facebook group posts every day. Most posts are irrelevant, poorly formatted, or missing key details. This process is time-consuming, and frustrating. 
+Finding a rental House often means scrolling through hundreds of Facebook group posts every day. Most posts are irrelevant, poorly formatted, or missing key details. This process is time-consuming, and frustrating.
 
 **Rent Posts Scraper** automates this process: it collects new posts from Facebook groups, uses AI to extract and structure the relevant details, and delivers only the most useful listings directly to a Telegram channel. This saves hours of manual scrolling and ensures you never miss a relevant opportunity.
 
@@ -29,12 +29,12 @@ Finding a rental apartment in Israel often means scrolling through hundreds of F
 ## Project Structure
 
 - `src/` — Main source code
-  - `facebook/` — Facebook scraping and extraction logic
-  - `llm/` — AI extraction utilities
-  - `telegram/` — Telegram bot and posting logic
-  - `db/` — Database client and schema
-  - `maps/` — Static map generation
-  - `utils/` — Utility functions and constants
+    - `facebook/` — Facebook scraping and extraction logic
+    - `llm/` — AI extraction utilities
+    - `telegram/` — Telegram bot and posting logic
+    - `db/` — Database client and schema
+    - `maps/` — Static map generation
+    - `utils/` — Utility functions and constants
 - `assets/` — Templates and images for posts
 - `config/` — Environment variables, cookies, and group lists
 - `drizzle/` — Database migration files
@@ -51,37 +51,40 @@ Finding a rental apartment in Israel often means scrolling through hundreds of F
 ### Installation
 
 1. Clone the repository:
-   ```sh
-   git clone <repo-url>
-   cd rent-posts-scraper
-   ```
+
+    ```sh
+    git clone <repo-url>
+    cd rent-posts-scraper
+    ```
 
 2. Install dependencies:
-   ```sh
-   npm install
-   ```
+
+    ```sh
+    npm install
+    ```
 
 3. Set up configuration:
-   - Copy and edit `config/config.env` with your environment variables.
-   - Add your Facebook cookies to `config/www.facebook.com_cookies.json`.
-   - List target Facebook groups in `config/groups.json`.
-   - Add your Telegram bot token and channel ID to the config.
+
+    - Copy and edit `config/config.env` with your environment variables.
+    - Add your Facebook cookies to `config/www.facebook.com_cookies.json`.
+    - List target Facebook groups in `config/groups.json`.
+    - Add your Telegram bot token and channel ID to the config.
 
 4. Build the project:
-   ```sh
-   npm run build
-   ```
+    ```sh
+    npm run build
+    ```
 
 ### Usage
 
 - **Run the main bot:**
-  ```sh
-  npm start
-  ```
+    ```sh
+    npm start
+    ```
 - **Run scheduled scraping:**
-  ```sh
-  npm run schedule
-  ```
+    ```sh
+    npm run schedule
+    ```
 
 ## Environment Variables
 
@@ -112,8 +115,12 @@ The following environment variables are used in `config/config.env`:
 ## Development
 
 - TypeScript strict mode is enabled.
+- Code is auto-formatted with Prettier (with the tsbs plugin for TypeScript best standards). Run `npm run format` to format the codebase manually.
+- A Prettier config file (`prettier.config.js`) is included for formatting rules.
+- Husky is set up to run `npm run lint:fix` and `npm run format` automatically before each commit (pre-commit hook).
 - Database migrations are managed with Drizzle ORM.
-- Linting and testing are not set up by default.
+- Linting is set up with ESLint (TypeScript support included).
+- Run `npm run lint` to check code style, and `npm run lint:fix` to auto-fix issues.
 
 ## Scripts
 
@@ -121,6 +128,8 @@ The following environment variables are used in `config/config.env`:
 - `npm start` — Run the main bot
 - `npm run schedule` — Run scheduled scraping
 - `npm run db:generate` — Generate Drizzle ORM types
+- `npm run lint` — Run ESLint on the codebase
+- `npm run lint:fix` — Auto-fix lint issues
 
 ## Dependencies
 

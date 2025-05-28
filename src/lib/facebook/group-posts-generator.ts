@@ -1,8 +1,8 @@
-import { interceptGraphQlResponses } from "./intrecept-graphql";
-import { scheduler } from "timers/promises";
-import { extractGroupFeedPost, GroupFeedPost } from "./group-feed-extractor";
-import { Browser } from "rebrowser-puppeteer";
-import { getLogger } from "../../utils/logger";
+import { interceptGraphQlResponses } from './intrecept-graphql';
+import { scheduler } from 'timers/promises';
+import { extractGroupFeedPost, GroupFeedPost } from './group-feed-extractor';
+import { Browser } from 'rebrowser-puppeteer';
+import { getLogger } from '../../utils/logger';
 
 const logger = getLogger('group-posts-generator');
 
@@ -52,7 +52,7 @@ export async function* groupPosts(groupId: string, browserInstance: Browser) {
         await page.evaluate(() => {
             document.scrollingElement?.scrollTo(0, document.scrollingElement.scrollHeight);
         });
-        // Wait for new posts to load 
+        // Wait for new posts to load
         await scheduler.wait(1000 * (Math.random() * 10));
     }
 
