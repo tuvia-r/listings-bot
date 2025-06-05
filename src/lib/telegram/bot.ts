@@ -26,7 +26,11 @@ export async function sendTextMessage(chatId: string, text: string, params?: { d
     );
 }
 
-export async function sendMessageWithAttachments(chatId: string, text: string, files: { type: 'video' | 'photo'; localPath: string }[]) {
+export async function sendMessageWithAttachments(
+    chatId: string,
+    text: string,
+    files: { type: 'video' | 'photo'; localPath: string }[],
+) {
     let hasMediaBeenSent = false;
     await pRetry(
         async () => {

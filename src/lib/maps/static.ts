@@ -35,14 +35,17 @@ async function getSessionToken() {
         return session.session;
     }
 
-    const response = await fetch(`https://tile.googleapis.com/v1/createSession?key=${process.env.GOOGLE_MAPS_API_KEY}`, {
-        method: 'POST',
-        body: JSON.stringify({
-            mapType: 'roadmap',
-            language: 'heb',
-            region: 'IL',
-        }),
-    });
+    const response = await fetch(
+        `https://tile.googleapis.com/v1/createSession?key=${process.env.GOOGLE_MAPS_API_KEY}`,
+        {
+            method: 'POST',
+            body: JSON.stringify({
+                mapType: 'roadmap',
+                language: 'heb',
+                region: 'IL',
+            }),
+        },
+    );
 
     session = await response.json();
     return session!.session;

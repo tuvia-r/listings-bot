@@ -22,7 +22,12 @@ export async function searchCoords(query: string) {
             },
         );
 
-        return response.places?.[0]?.location?.latitude ? ([response.places?.[0]?.location?.longitude, response.places?.[0]?.location?.latitude] as [number, number]) : undefined;
+        return response.places?.[0]?.location?.latitude
+            ? ([response.places?.[0]?.location?.longitude, response.places?.[0]?.location?.latitude] as [
+                  number,
+                  number,
+              ])
+            : undefined;
     } catch (error) {
         logger.error('Error searching for places:', error);
         throw error;

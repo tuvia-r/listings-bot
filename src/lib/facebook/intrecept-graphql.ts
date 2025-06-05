@@ -65,19 +65,7 @@ export async function interceptGraphQlResponses(page: Page, callback: Intercepti
                 const responseBody = await interceptedResponse.text();
 
                 // Check if it appears to be a relevant response that might contain posts
-                const containsRelevantData =
-                    responseBody.includes('post_id') ||
-                    responseBody.includes('group_feed') ||
-                    responseBody.includes('comet_sections') ||
-                    responseBody.includes('story_card') ||
-                    responseBody.includes('story_owner') ||
-                    responseBody.includes('attachments') ||
-                    responseBody.includes('Photo') ||
-                    responseBody.includes('Video') ||
-                    responseBody.includes('"actors"') ||
-                    responseBody.includes('"comments"') ||
-                    responseBody.includes('creation_time') ||
-                    responseBody.includes('feedback');
+                const containsRelevantData = responseBody.includes('post_id');
 
                 if (containsRelevantData) {
                     logger.debug('Found relevant GraphQL response with potential post data');

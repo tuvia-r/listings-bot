@@ -149,3 +149,4 @@ resources/
 *cookies.json
 
 config/config.env
+config/groups.json

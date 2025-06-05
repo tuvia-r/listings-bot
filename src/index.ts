@@ -23,7 +23,10 @@ export async function main() {
             async (groupId) => {
                 logger.info(`Starting scraping for group ID: ${groupId.trim()}`);
                 try {
-                    await Promise.race([fetchPostsOperation(groupId.trim(), browserInstance), scheduler.wait(EXTRACTOR_MAX_GROUP_SCROLL_TIME)]);
+                    await Promise.race([
+                        fetchPostsOperation(groupId.trim(), browserInstance),
+                        scheduler.wait(EXTRACTOR_MAX_GROUP_SCROLL_TIME),
+                    ]);
                     logger.info(`Completed scraping for group ID: ${groupId.trim()}`);
                 } catch (error) {
                     logger.error(`Error scraping group ID ${groupId.trim()}:`, error);

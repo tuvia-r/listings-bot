@@ -96,8 +96,13 @@ async function extractFromNode(node: any): Promise<GroupFeedPost> {
     const creationTime =
         get(node, 'comet_sections.timestamp.story.creation_time') ||
         get(node, 'comet_sections.context_layout.story.comet_sections.metadata[0].story.creation_time') ||
-        get(node, 'story.attached_story.comet_sections.attached_story_layout.story.comet_sections.metadata[0].story.creation_time');
-    const postUrl = get(node, 'comet_sections.feedback.story.story_ufi_container.story.url') || get(node, 'comet_sections.timestamp.story.url');
+        get(
+            node,
+            'story.attached_story.comet_sections.attached_story_layout.story.comet_sections.metadata[0].story.creation_time',
+        );
+    const postUrl =
+        get(node, 'comet_sections.feedback.story.story_ufi_container.story.url') ||
+        get(node, 'comet_sections.timestamp.story.url');
     const publisherName = get(node, 'actors[0].name') || get(node, 'comet_sections.content.story.actors[0].id');
     const publisherUrl = get(node, 'actors[0].url') || get(node, 'comet_sections.content.story.actors[0].url');
     const publisherId = get(node, 'actors[0].id') || get(node, 'comet_sections.content.story.actors[0].id');
@@ -155,11 +160,16 @@ function extractAttachment(attachment: any) {
             type: 'photo',
             id,
             localPath,
-            url: get(attachment, 'media.image.uri') || get(attachment, 'media.comet_photo_attachment_resolution_renderer.image.uri'),
+            url:
+                get(attachment, 'media.image.uri') ||
+                get(attachment, 'media.comet_photo_attachment_resolution_renderer.image.uri'),
         };
     } else if (type === 'Video') {
         const urls =
-            get(attachment, 'media.video_grid_renderer.video.videoDeliveryResponseFragment.videoDeliveryResponseResult.progressive_urls') ||
+            get(
+                attachment,
+                'media.video_grid_renderer.video.videoDeliveryResponseFragment.videoDeliveryResponseResult.progressive_urls',
+            ) ||
             get(attachment, 'media.videoDeliveryResponseFragment.videoDeliveryResponseResult.progressive_urls') ||
             [];
         return {

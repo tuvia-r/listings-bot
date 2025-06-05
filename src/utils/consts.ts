@@ -7,7 +7,9 @@ export const DB_FILE_NAME = process.env.DB_FILE_NAME || './dbs/sqlite.db';
 
 export const TELEGRAM_GROUP_ID = process.env.TELEGRAM_GROUP_ID as string;
 
-export const EXTRACTOR_MAX_GROUP_SCROLL_TIME = ms((process.env.EXTRACTOR_MAX_GROUP_SCROLL_TIME as ms.StringValue) ?? '10m');
+export const EXTRACTOR_MAX_GROUP_SCROLL_TIME = ms(
+    (process.env.EXTRACTOR_MAX_GROUP_SCROLL_TIME as ms.StringValue) ?? '10m',
+);
 export const EXTRACTOR_CONCURRENCY = Number.parseInt(process.env.EXTRACTOR_CONCURRENCY || '3');
 
 export const EXTRACT_DETAILS_MODEL_ID = process.env.EXTRACT_DETAILS_MODEL_ID || 'gemini-2.0-flash';

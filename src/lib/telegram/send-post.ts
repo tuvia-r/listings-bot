@@ -32,7 +32,9 @@ function getPostDateInfo(post: PostWithRelations): string {
 export async function formatPostMessage(post: PostWithRelations, locationUrl: string): Promise<string> {
     const postMdTemplate = await readFile('./assets/post-template.md', 'utf-8');
 
-    const originalText = [post.text, ...(post.childPosts?.map((child) => child.childPost.text) || [])].join('\n --- \n');
+    const originalText = [post.text, ...(post.childPosts?.map((child) => child.childPost.text) || [])].join(
+        '\n --- \n',
+    );
 
     const postMkdn = postMdTemplate
         .replace('$title$', post.postSummary ?? '-')
@@ -43,7 +45,10 @@ export async function formatPostMessage(post: PostWithRelations, locationUrl: st
         .replace('$location$', post.postLocation ?? '-')
         .replace('$locationUrl$', locationUrl)
         .replace('$size$', post.listingSize ?? 'לא צויין גודל')
-        .replace('$availableFrom$', post.availableFrom ? new Date(post.availableFrom).toLocaleDateString('he-IL') : 'לא צויין')
+        .replace(
+            '$availableFrom$',
+            post.availableFrom ? new Date(post.availableFrom).toLocaleDateString('he-IL') : 'לא צויין',
+        )
         .replace('$extraDetails$', post.postExtraDetails ?? '')
         .replace('$contactInfo$', post.postContactInfo ?? 'לא צויין פרטי קשר')
         .replace('$date$', getPostDateInfo(post));
@@ -61,7 +66,10 @@ export async function sendPostToTelegram(post: PostWithRelations): Promise<boole
         const chatId = TELEGRAM_GROUP_ID;
 
         // If there are images, send them as a media group
-        const attachments = compact([...(post.postAttachments || []), ...(post.childPosts?.flatMap((child) => child.childPost.postAttachments) || [])]);
+        const attachments = compact([
+            ...(post.postAttachments || []),
+            ...(post.childPosts?.flatMap((child) => child.childPost.postAttachments) || []),
+        ]);
         logger.info(`Sending post ${post.postId} to Telegram with ${attachments.length} attachments`);
         const mediaGroup: { type: 'video' | 'photo'; localPath: string }[] = [];
         if (attachments.length) {

@@ -25,13 +25,22 @@ const responseSchema = z.object({
     propertyType: z
         .enum(Object.values(PropertyType) as [PropertyType, ...PropertyType[]])
         .describe(`Type of the property, should be one of ${Object.values(PropertyType).join(', ')}`),
-    listingType: z.enum(Object.values(ListingType) as [ListingType, ...ListingType[]]).describe(`Type of the listing, should be one of ${Object.values(ListingType).join(', ')}`),
+    listingType: z
+        .enum(Object.values(ListingType) as [ListingType, ...ListingType[]])
+        .describe(`Type of the listing, should be one of ${Object.values(ListingType).join(', ')}`),
     rentalType: z
         .enum(Object.values(RentalType) as [RentalType, ...RentalType[]])
         .optional()
-        .describe(`Type of the rental, should be one of ${Object.values(RentalType).join(', ')}, if not a rental, this should be null`),
-    location: z.string().describe(`Full Location of the property, e.g., city or neighborhood or whatever is mentioned in the post`),
-    price: z.number().optional().describe(`Price of the property, if mentioned. if the price is not mentioned, this should be -1`),
+        .describe(
+            `Type of the rental, should be one of ${Object.values(RentalType).join(', ')}, if not a rental, this should be null`,
+        ),
+    location: z
+        .string()
+        .describe(`Full Location of the property, e.g., city or neighborhood or whatever is mentioned in the post`),
+    price: z
+        .number()
+        .optional()
+        .describe(`Price of the property, if mentioned. if the price is not mentioned, this should be -1`),
     sizeInM2: z.number().optional().describe(`Size of the property in square meters, if mentioned`),
     numberOfFloors: z.number().optional().describe(`Number of floors in the property, if mentioned`),
     numberOfRooms: z.number().optional().describe(`Number of rooms in the property, if mentioned`),
@@ -44,7 +53,10 @@ const responseSchema = z.object({
     doesPriceIncludeElectricity: z.boolean().describe(`Flag indicating if the price includes electricity`),
     doesPriceIncludeWater: z.boolean().describe(`Flag indicating if the price includes water`),
     doesPriceIncludeLocalTaxes: z.boolean().describe(`Flag indicating if the price includes local taxes`),
-    availableFrom: z.string().optional().describe(`Availability date of the property, in format YYYY-MM-DD, if mentioned else null`),
+    availableFrom: z
+        .string()
+        .optional()
+        .describe(`Availability date of the property, in format YYYY-MM-DD, if mentioned else null`),
     showingDate: z.string().optional().describe(`Showing date of the property if mentioned, in format YYYY-MM-DD,`),
     showingTime: z.string().optional().describe(`Showing time of the property, in format HH:mm, if mentioned`),
     phoneNumbers: z
@@ -58,7 +70,11 @@ const responseSchema = z.object({
         )
         .optional(),
     isByBrokerOrAgent: z.boolean().describe(`Flag indicating if the post is by a broker or agent`),
-    isMarkedAsIrelevant: z.boolean().describe(`Flag indicating if the post is marked as irrelevant, like if the property is already rented or sold`),
+    isMarkedAsIrelevant: z
+        .boolean()
+        .describe(
+            `Flag indicating if the post is marked as irrelevant, like if the property is already rented or sold`,
+        ),
     postSummary: z
         .string()
         .describe(
@@ -69,15 +85,22 @@ const responseSchema = z.object({
         .describe(
             `Description of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, this is a summary of the text of the post itself, should exclude other details like price and contact info, just leave a short description of the property, it should be in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}. keep this short and concise`,
         ),
-    postLocation: z.string().optional().describe(`Location of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, if mentioned, else null`),
+    postLocation: z
+        .string()
+        .optional()
+        .describe(`Location of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, if mentioned, else null`),
     listingSize: z
         .string()
         .optional()
-        .describe(`Size of the listing in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, including number of rooms, size in m**2, etc., if mentioned, else null`),
+        .describe(
+            `Size of the listing in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, including number of rooms, size in m**2, etc., if mentioned, else null`,
+        ),
     postPrice: z
         .string()
         .optional()
-        .describe(`Price of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, should include price, and price details like if it includes electricity, if mentioned, else null`),
+        .describe(
+            `Price of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, should include price, and price details like if it includes electricity, if mentioned, else null`,
+        ),
     postExtraDetails: z
         .string()
         .optional()
@@ -87,7 +110,9 @@ const responseSchema = z.object({
     postContactInfo: z
         .string()
         .optional()
-        .describe(`Contact info of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, short and percise, like: 'whatsapp - 0500 , john.', if mentioned, else null`),
+        .describe(
+            `Contact info of the post in ${EXTRACT_DETAILS_OUTPUT_LANGUAGE}, short and percise, like: 'whatsapp - 0500 , john.', if mentioned, else null`,
+        ),
 });
 
 const systemInstruction = `

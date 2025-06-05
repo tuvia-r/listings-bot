@@ -111,7 +111,11 @@ export async function getUnprocessedPosts() {
         });
         return unprocessedPosts
             .filter((post) => !post?.parentPosts?.length) // Only return top-level posts
-            .filter((post) => !post.childPosts || post.childPosts.every((child) => child.childPost.processingStatus === PostProcessingStatus.Pending));
+            .filter(
+                (post) =>
+                    !post.childPosts ||
+                    post.childPosts.every((child) => child.childPost.processingStatus === PostProcessingStatus.Pending),
+            );
     } catch (error) {
         logger.error('Error getting unprocessed posts:', error);
         throw error;
