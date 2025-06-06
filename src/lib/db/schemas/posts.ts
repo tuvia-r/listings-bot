@@ -1,8 +1,9 @@
 import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
-import { ExtractedPostDetails, ListingType, PropertyType, RentalType } from '../../llm/extract-post-details';
+import { ExtractedPostDetails } from '../../llm/extract-post-details';
 import { GroupFeedPost, GroupFeedPostAttachment } from '../../facebook/group-feed-extractor';
 import { relations } from 'drizzle-orm';
+import { ListingType, PropertyType, RentalType } from '../../../utils/consts';
 
 /**
  * Combined type for posts including raw Facebook data and extracted details

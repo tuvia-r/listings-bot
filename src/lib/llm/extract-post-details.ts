@@ -2,34 +2,21 @@ import { z } from 'zod';
 import { complete } from './api';
 import { zodToVertexSchema } from '@techery/zod-to-vertex-schema';
 import { GroupFeedPost } from '../facebook/group-feed-extractor';
-import { EXTRACT_DETAILS_OUTPUT_LANGUAGE } from '../../utils/consts';
+import { EXTRACT_DETAILS_OUTPUT_LANGUAGE, ListingType, PropertyType, RentalType } from '../../utils/consts';
 
-export enum PropertyType {
-    House = 'House',
-    Apartment = 'Apartment',
-    Room = 'Room',
-    Other = 'Other',
-}
-
-export enum ListingType {
-    Rental = 'Rental',
-    Sale = 'Sale',
-}
-
-export enum RentalType {
-    ShortTerm = 'ShortTerm',
-    LongTerm = 'LongTerm',
+function enumValues<T extends object>(e: T): [T[keyof T], ...T[keyof T][]] {
+    return Object.values(e) as [T[keyof T], ...T[keyof T][]];
 }
 
 const responseSchema = z.object({
     propertyType: z
-        .enum(Object.values(PropertyType) as [PropertyType, ...PropertyType[]])
+        .enum(enumValues(PropertyType))
         .describe(`Type of the property, should be one of ${Object.values(PropertyType).join(', ')}`),
     listingType: z
-        .enum(Object.values(ListingType) as [ListingType, ...ListingType[]])
+        .enum(enumValues(ListingType))
         .describe(`Type of the listing, should be one of ${Object.values(ListingType).join(', ')}`),
     rentalType: z
-        .enum(Object.values(RentalType) as [RentalType, ...RentalType[]])
+        .enum(enumValues(RentalType))
         .optional()
         .describe(
             `Type of the rental, should be one of ${Object.values(RentalType).join(', ')}, if not a rental, this should be null`,
@@ -137,7 +124,7 @@ export async function extractPostDetails(post: GroupFeedPost) {
     const res = await complete(JSON.stringify(post, null, 2), systemInstruction, zodToVertexSchema(responseSchema));
     const json = JSON.parse(res.text ?? '{}') as ExtractedPostDetails;
     for (const key in json) {
-        let value = (json as any)[key];
+        const value = (json as any)[key];
         if (value === undefined || value === null || value === '' || value === 'null' || value === -1) {
             delete (json as any)[key];
         }

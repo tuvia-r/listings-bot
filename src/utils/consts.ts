@@ -16,7 +16,32 @@ export const EXTRACT_DETAILS_MODEL_ID = process.env.EXTRACT_DETAILS_MODEL_ID || 
 
 export const EXTRACT_DETAILS_OUTPUT_LANGUAGE = process.env.EXTRACT_DETAILS_OUTPUT_LANGUAGE || 'English';
 
-export const MAX_NEW_POSTS = Number.parseInt(process.env.EXTRACTOR_MAX_NEW_POSTS_ADDED || '50'); // Maximum number of new posts to process
-export const MAX_POSTS = Number.parseInt(process.env.EXTRACTOR_MAX_POST_SCROLLED || '100'); // Maximum number of posts to process
+export const FACEBOOK_GROUP_SCROLLS_NUMBER = Number.parseInt(process.env.FACEBOOK_GROUP_SCROLLS_NUMBER || '50'); 
 
 export const MAX_POST_AGE = ms((process.env.EXTRACTOR_MAX_POST_AGE as ms.StringValue) || '90d'); // Maximum age of posts to process, in milliseconds
+
+export type FilterItem<T> = [keyof T, T[keyof T] | T[keyof T][]]
+
+export enum PropertyType {
+    House = 'House',
+    Apartment = 'Apartment',
+    Room = 'Room',
+    Other = 'Other',
+}
+
+export enum ListingType {
+    Rental = 'Rental',
+    Sale = 'Sale',
+}
+
+export enum RentalType {
+    ShortTerm = 'ShortTerm',
+    LongTerm = 'LongTerm',
+}
+
+export const NOTIFICATION_FILTERS = [
+    ['propertyType', PropertyType.House],// Only get house posts
+    ['listingType', ListingType.Rental],// Only get rental listings
+    ['rentalType', RentalType.LongTerm],// Only get long-term rentals
+    ['isMarkedAsIrelevant', false]// Only get posts that are pending processing
+] as FilterItem<any>[];

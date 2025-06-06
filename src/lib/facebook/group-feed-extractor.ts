@@ -1,11 +1,6 @@
-import { existsSync, mkdirSync } from 'fs';
 import { compact, get } from 'lodash-es';
 import { getLogger } from '../../utils/logger';
 import { ATTACHMENTS_DIR } from '../../utils/consts';
-
-if (!existsSync(ATTACHMENTS_DIR)) {
-    mkdirSync(ATTACHMENTS_DIR, { recursive: true });
-}
 
 const logger = getLogger('group-feed-extractor');
 
@@ -39,8 +34,9 @@ export async function extractGroupFeedPost(post: any): Promise<GroupFeedPost[]> 
     let posts: GroupFeedPost[] = [];
     if (type === 'Group') {
         posts = await extractFromFeedInitial(post);
-    } else if (type.endsWith('group_feed')) {
-        posts = [await extractFromNode(post.data.node)];
+    }
+    else {
+        logger.debug(`Unknown post type: ${type}`);
     }
 
     const byId = new Map<string, GroupFeedPost>();
@@ -52,7 +48,6 @@ export async function extractGroupFeedPost(post: any): Promise<GroupFeedPost[]> 
         byId.set(post.postId, post);
     }
 
-    logger.debug(`Unknown post type: ${type}`);
     return Array.from(byId.values());
 }
 
@@ -60,6 +55,8 @@ async function extractFromFeedInitial(post: any): Promise<GroupFeedPost[]> {
     const posts: GroupFeedPost[] = [];
 
     const edges = get(post, 'data.node.group_feed.edges', []);
+    logger.debug(`Extracting ${edges.length} posts from group feed`);
+
     if (edges.length === 0) {
         return [];
     }

@@ -1,7 +1,7 @@
 import { client } from './client';
 import { and, eq } from 'drizzle-orm';
 import { postsTable, CombinedPost, postToDbRecord, PostProcessingStatus, PostToPostTable } from './schemas/posts';
-import { ListingType, PropertyType, RentalType } from '../llm/extract-post-details';
+import { ListingType, PropertyType, RentalType } from '../../utils/consts';
 import { getLogger } from '../../utils/logger';
 
 const logger = getLogger('posts-db');

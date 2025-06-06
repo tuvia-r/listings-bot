@@ -1,20 +1,13 @@
-import { HTTPRequest, HTTPResponse, Page } from 'rebrowser-puppeteer';
+import { HTTPResponse, Page } from 'rebrowser-puppeteer';
 import { getLogger } from '../../utils/logger';
+import { get, set } from 'lodash-es';
 
 const logger = getLogger('facebook-intercept-graphql');
 
-export type InterseptionEvent = {
-    request: HTTPRequest;
-    response: HTTPResponse;
-    responseBody: any;
-    error: Error | null;
-};
+export type InterceptionCallback = (json: any) => any | Promise<any>;
 
-export type InterceptionCallback = (event: InterseptionEvent) => void | Promise<void>;
-
-async function handleGraphQLRequest(request: HTTPRequest, response: HTTPResponse, callback: InterceptionCallback) {
+async function extractJsonFromGraphQLResponse(response: HTTPResponse) {
     const responseBody = await response.text();
-    logger.debug(`GraphQL request detected at: ${request.url()}`);
 
     // Parse each line of the response as a separate JSON object
     // Facebook often returns multiple JSON objects in a single response
@@ -36,14 +29,25 @@ async function handleGraphQLRequest(request: HTTPRequest, response: HTTPResponse
         logger.debug(`Successfully parsed ${parsedResponses.length} response objects from GraphQL response`);
     }
 
-    await callback({
-        request,
-        response,
-        responseBody: parsedResponses,
-        error: null,
-    });
+    // build the final JSON object
+    // the first object is considered the "completed" JSON
+    // and subsequent objects are merged into it
 
-    logger.debug('GraphQL response processing completed.');
+    const completedJson = parsedResponses.shift();
+
+    for (const response of parsedResponses) {
+        const { path = [], data } = response;
+        if(path.length === 0 || !data) {
+            logger.warn('Skipping response with empty path');
+            logger.debug('Response content:', JSON.stringify(response, null, 2));
+            continue;
+        }
+        path.unshift('data'); // Ensure the path starts with 'data'
+        logger.debug(`Setting response at path: ${path}`);
+        set(completedJson, path, {...get(completedJson, path), ...data});
+    }
+
+    return completedJson;
 }
 
 export async function interceptGraphQlResponses(page: Page, callback: InterceptionCallback) {
@@ -69,7 +73,8 @@ export async function interceptGraphQlResponses(page: Page, callback: Intercepti
 
                 if (containsRelevantData) {
                     logger.debug('Found relevant GraphQL response with potential post data');
-                    await handleGraphQLRequest(interceptedRequest, interceptedResponse, callback);
+                    const jsonResponse = await extractJsonFromGraphQLResponse(interceptedResponse);
+                    await callback(jsonResponse);
                 }
             } catch (error) {
                 logger.error('Error handling GraphQL response:', error);

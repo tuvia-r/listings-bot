@@ -1,43 +1,26 @@
 import cron from 'node-cron';
-import { spawn } from 'child_process';
+import { run } from './src';
 import { logDone, logError, logStart } from './src/lib/telegram/logs';
 import { getLogger } from './src/utils/logger';
 
 const logger = getLogger('cron');
 
 async function executeScheduledTask() {
-    logStart()
-        .then(() => logger.info('Log start message sent successfully.'))
-        .catch((err) => logger.error('Error sending log start message:', err));
-
-    const child = spawn('npm', ['run', 'start'], {
-        shell: true,
-        stdio: 'inherit',
-        env: { ...process.env, NODE_ENV: 'production' },
-    });
-
-    let err = '';
-    child.stderr?.on('data', (data: Buffer) => {
-        err += data.toString();
-    });
-
-    child.on('close', (code: number) => {
-        if (err) {
-            logError(new Error(`Process encountered an error: ${err}`))
-                .then(() => logger.error('Log error message sent successfully.'))
-                .catch((err) => logger.error('Error sending log error message:', err));
-        }
-        if (code === 0) {
-            logDone('Cron job executed successfully.')
-                .then(() => logger.info('Log done message sent successfully.'))
-                .catch((err) => logger.error('Error sending log done message:', err));
-        } else {
-            logError(new Error(`Process exited with code ${code}`))
-                .then(() => logger.error('Log error message sent successfully.'))
-                .catch((err) => logger.error('Error sending log error message:', err));
-            logger.error(`Process exited with code ${code}`);
-        }
-    });
+    try {
+        logger.info('Executing scheduled task...');
+        await logStart();
+        logger.info('Starting cron job execution...');
+        await run();
+        logger.info('Cron job executed successfully.');
+        await logDone('Cron job executed successfully.');
+        logger.info('Scheduled task completed successfully.');
+    }
+    catch (err) {
+        logger.error('Error executing scheduled task:', err);
+        await logError(new Error(`Scheduled task execution failed: ${err}`)).catch((error) => {
+            logger.error('Error logging the error:', error);
+        });
+    }
 }
 
 // Schedule at 09:00, 12:00, 17:00, 22:00 every day
