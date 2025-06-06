@@ -2,3 +2,12 @@
 . "$(dirname "$0")/_/husky.sh"
 
 npm run lint:fix && npm run format
+
+# if the linting or formatting fails, exit with an error
+if [ $? -ne 0 ]; then
+  echo "Linting or formatting failed. Please fix the issues before committing."
+  exit 1
+fi
+
+# add the affected files to the commit
+git add -u
