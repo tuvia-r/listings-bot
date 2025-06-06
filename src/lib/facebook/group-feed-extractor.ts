@@ -34,8 +34,7 @@ export async function extractGroupFeedPost(post: any): Promise<GroupFeedPost[]> 
     let posts: GroupFeedPost[] = [];
     if (type === 'Group') {
         posts = await extractFromFeedInitial(post);
-    }
-    else {
+    } else {
         logger.debug(`Unknown post type: ${type}`);
     }
 

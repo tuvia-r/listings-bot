@@ -11,15 +11,17 @@ import { PostProcessingStatus } from '../lib/db/schemas/posts';
 const logger = getLogger('notifications-operations');
 
 export async function onNotification(postId: string) {
-
     const post = await getPostById(postId);
 
-    if(!post) {
+    if (!post) {
         logger.warn(`Post with ID ${postId} not found for notification`);
         return;
     }
 
-    const validationResult = validateObjectAgainstFilters(post, [['processingStatus', PostProcessingStatus.Pending], ...NOTIFICATION_FILTERS]);
+    const validationResult = validateObjectAgainstFilters(post, [
+        ['processingStatus', PostProcessingStatus.Pending],
+        ...NOTIFICATION_FILTERS,
+    ]);
 
     if (!validationResult.isValid) {
         logger.info(`Post with ID ${postId} did not pass the filters`, validationResult.missmatchedFilters);
@@ -29,13 +31,13 @@ export async function onNotification(postId: string) {
 
     const message = await formatPostMessage(post);
 
-     const attachments = compact([
-                ...(post.postAttachments || []),
-                ...(post.childPosts?.flatMap((child) => child.childPost.postAttachments) || []),
+    const attachments = compact([
+        ...(post.postAttachments || []),
+        ...(post.childPosts?.flatMap((child) => child.childPost.postAttachments) || []),
     ]);
     logger.info(`Sending post ${post.postId} to Telegram with ${attachments.length} attachments`);
     const mediaGroup: { type: 'video' | 'photo'; localPath: string }[] = [];
-            
+
     for (const attachment of attachments) {
         const localPath = attachment.localPath;
 
@@ -51,9 +53,8 @@ export async function onNotification(postId: string) {
         mediaGroup.push(staticMapAttachment);
     }
 
-    // Process up to 10 images (Telegram's maximum for a media group) 
+    // Process up to 10 images (Telegram's maximum for a media group)
     const limitedMediaGroup = mediaGroup.slice(0, 10);
 
     await sendMessageWithAttachments(TELEGRAM_GROUP_ID, message, limitedMediaGroup);
 }
-

@@ -14,8 +14,7 @@ async function executeScheduledTask() {
         logger.info('Cron job executed successfully.');
         await logDone('Cron job executed successfully.');
         logger.info('Scheduled task completed successfully.');
-    }
-    catch (err) {
+    } catch (err) {
         logger.error('Error executing scheduled task:', err);
         await logError(new Error(`Scheduled task execution failed: ${err}`)).catch((error) => {
             logger.error('Error logging the error:', error);

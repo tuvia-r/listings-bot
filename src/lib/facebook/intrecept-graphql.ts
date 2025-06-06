@@ -37,14 +37,14 @@ async function extractJsonFromGraphQLResponse(response: HTTPResponse) {
 
     for (const response of parsedResponses) {
         const { path = [], data } = response;
-        if(path.length === 0 || !data) {
+        if (path.length === 0 || !data) {
             logger.warn('Skipping response with empty path');
             logger.debug('Response content:', JSON.stringify(response, null, 2));
             continue;
         }
         path.unshift('data'); // Ensure the path starts with 'data'
         logger.debug(`Setting response at path: ${path}`);
-        set(completedJson, path, {...get(completedJson, path), ...data});
+        set(completedJson, path, { ...get(completedJson, path), ...data });
     }
 
     return completedJson;

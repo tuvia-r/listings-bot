@@ -1,10 +1,9 @@
-import { PostWithRelations } from "../lib/db/schemas/posts";
-import { searchCoords } from "../lib/maps/coords";
-import { createStaticMap } from "../lib/maps/static";
-import { MAPS_DIR } from "../utils/consts";
+import { PostWithRelations } from '../lib/db/schemas/posts';
+import { searchCoords } from '../lib/maps/coords';
+import { createStaticMap } from '../lib/maps/static';
+import { MAPS_DIR } from '../utils/consts';
 
-
-export async function generatePostStaticMapAttachment(post: PostWithRelations){
+export async function generatePostStaticMapAttachment(post: PostWithRelations) {
     const location = post.location || post.childPosts?.[0]?.childPost.location;
     if (location) {
         const locationCoords = await searchCoords(location);

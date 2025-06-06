@@ -86,7 +86,7 @@ export function createQueue<T>(
     const subscribbers = new Set<(item: T) => void>();
 
     async function processQueue(): Promise<boolean> {
-        if( subscribbers.size === 0) {
+        if (subscribbers.size === 0) {
             return false; // no subscribers, nothing to process
         }
         const stmt = client.prepare(`SELECT * FROM queue WHERE status = 'pending' ORDER BY created_at LIMIT 1`);
@@ -158,7 +158,7 @@ export function createQueue<T>(
             return row.count || 0;
         },
         async waitForAll(): Promise<void> {
-            while (await this.length() > 0) {
+            while ((await this.length()) > 0) {
                 await scheduler.wait(100); // wait for 100 milliseconds before checking again
             }
         },

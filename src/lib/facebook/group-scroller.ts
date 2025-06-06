@@ -7,7 +7,11 @@ import { extractGroupFeedPost } from './group-feed-extractor';
 
 const logger = getLogger('group-posts-scroller');
 
-export async function scrollGroupFeed(groupId: string, browserInstance: Browser, numberOfScrolles: number): Promise<void> {
+export async function scrollGroupFeed(
+    groupId: string,
+    browserInstance: Browser,
+    numberOfScrolles: number,
+): Promise<void> {
     const page = await browserInstance.newPage();
     await page.setUserAgent(
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',

@@ -1,4 +1,4 @@
-import { getLogger } from "../utils/logger";
+import { getLogger } from '../utils/logger';
 import { getPostById, setPost } from '../lib/db/posts';
 import { CombinedPost } from '../lib/db/schemas/posts';
 import { ExtractedPostDetails } from '../lib/llm/extract-post-details';
@@ -6,7 +6,6 @@ import { downloadFile } from '../lib/fs/download-file';
 import { GroupFeedPost } from '../lib/facebook/group-feed-extractor';
 
 const logger = getLogger('post-operations');
-
 
 export async function savePost(post: GroupFeedPost, extractedDetails: ExtractedPostDetails) {
     const existingPost = await getPostById(post.postId);
